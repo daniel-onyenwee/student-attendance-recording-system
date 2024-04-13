@@ -1,0 +1,14 @@
+{
+  "name": "student-attendance-recording-system",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "lerna": "^8.1.2"
+  }
+}
