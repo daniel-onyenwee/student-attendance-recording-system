@@ -24,7 +24,7 @@ enum Gender {
   FEMALE
 }
 
-enum UserRole {
+enum UserType {
   ADMIN
   LECTURER
   STUDENT
@@ -32,7 +32,7 @@ enum UserRole {
 
 model User {
   id          String     @id @default(uuid())
-  role        UserRole
+  type        UserType
   accessToken String     @unique @map("access_token")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
