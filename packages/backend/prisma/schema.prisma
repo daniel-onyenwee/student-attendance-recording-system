@@ -24,14 +24,34 @@ enum Gender {
   FEMALE
 }
 
+enum UserRole {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+model User {
+  id          String     @id @default(uuid())
+  role        UserRole
+  accessToken String     @unique @map("access_token")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  metadata    Json       @default("{}")
+  admins      Admin[]
+  lecturers   Lecturer[]
+  students    Student[]
+
+  @@map("users")
+}
+
 model Admin {
-  id          String   @id @default(uuid())
-  username    String   @unique
-  password    String
-  accessToken String   @unique @map("access_token")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  metadata    Json     @default("{}")
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  metadata  Json     @default("{}")
 
   @@map("admins")
 }
@@ -83,7 +103,7 @@ model Lecturer {
   gender       Gender     @default(MALE)
   username     String     @unique
   password     String
-  accessToken  String     @unique @map("access_token")
+  user         User       @relation(fields: [id], references: [id], onDelete: Cascade)
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
   createdAt    DateTime   @default(now()) @map("created_at")
@@ -101,7 +121,7 @@ model Student {
   gender       Gender     @default(MALE)
   level        Level
   faceImage    String     @map("face_image")
-  accessToken  String     @unique @map("access_token")
+  user         User       @relation(fields: [id], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now()) @map("created_at")
