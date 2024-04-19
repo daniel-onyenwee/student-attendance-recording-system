@@ -26,6 +26,8 @@
     "test": "vitest --run",
     "ts:build": "tsc --build",
     "ts:watch": "tsc --watch",
+    "init": "npm run init:db",
+    "init:db": "prisma db push",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "test:get:route": "vitest --run test/get.test.ts",
