@@ -6,3 +6,107 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum Level {
+  L_100
+  L_200
+  L_300
+  L_400
+  L_500
+  L_600
+  L_800
+  L_900
+  L_1000
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Admin {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String
+  accessToken String   @unique @map("access_token")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  metadata    Json     @default("{}")
+
+  @@map("admins")
+}
+
+model Faculty {
+  id          String       @id @default(uuid())
+  name        String
+  departments Department[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  metadata    Json         @default("{}")
+
+  @@map("faculties")
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String
+  faculty   Faculty    @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  facultyId String     @map("faculty_id")
+  levels    Level[]    @default([L_100])
+  courses   Course[]
+  lecturers Lecturer[]
+  students  Student[]
+  metadata  Json       @default("{}")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("departments")
+}
+
+model Course {
+  id           String     @id @default(uuid())
+  title        String
+  code         String
+  level        Level
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String     @map("department_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  metadata     Json       @default("{}")
+
+  @@map("courses")
+}
+
+model Lecturer {
+  id           String     @id @default(uuid())
+  name         String
+  gender       Gender     @default(MALE)
+  username     String     @unique
+  password     String
+  accessToken  String     @unique @map("access_token")
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String     @map("department_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  metadata     Json       @default("{}")
+
+  @@map("lecturers")
+}
+
+model Student {
+  id           String     @id @default(uuid())
+  name         String
+  regno        String     @unique
+  password     String
+  gender       Gender     @default(MALE)
+  level        Level
+  faceImage    String     @map("face_image")
+  accessToken  String     @unique @map("access_token")
+  departmentId String     @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  metadata     Json       @default("{}")
+
+  @@map("students")
+}
