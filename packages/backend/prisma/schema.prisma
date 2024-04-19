@@ -46,7 +46,8 @@ model User {
 
 model Admin {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
   username  String   @unique
   password  String
   createdAt DateTime @default(now()) @map("created_at")
@@ -103,7 +104,8 @@ model Lecturer {
   gender       Gender     @default(MALE)
   username     String     @unique
   password     String
-  user         User       @relation(fields: [id], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String     @map("user_id")
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
   createdAt    DateTime   @default(now()) @map("created_at")
@@ -121,7 +123,8 @@ model Student {
   gender       Gender     @default(MALE)
   level        Level
   faceImage    String     @map("face_image")
-  user         User       @relation(fields: [id], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String     @map("user_id")
   departmentId String     @map("department_id")
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now()) @map("created_at")
