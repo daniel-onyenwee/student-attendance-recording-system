@@ -24,14 +24,15 @@
     "start": "npm run ts:build && node ./lib/index.js",
     "dev": "concurrently -k \"npm run ts:watch\" \"nodemon ./lib/index.js\"",
     "test": "vitest --run",
+    "init": "npm run prisma:db:push",
     "ts:build": "tsc --build",
     "ts:watch": "tsc --watch",
-    "init": "npm run init:db",
-    "init:db": "prisma db push",
+    "test:get:route": "vitest --run test/get.test.ts",
+    "test:process:route": "vitest --run test/process.test.ts",
+    "prisma:db:push": "prisma db push",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "test:get:route": "vitest --run test/get.test.ts",
-    "test:process:route": "vitest --run test/process.test.ts"
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
