@@ -1,14 +1,13 @@
 import { NextFunction, Request, Response } from "express"
-import { PrismaClient } from "@prisma/client"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import "dotenv/config"
+import { prismaClient } from "../utils/index.js"
 
 /**
  * Prevent unauthenticated access to the system.
  */
 export default function auth() {
     return async function (req: Request, res: Response, next: NextFunction) {
-        const prisma = new PrismaClient()
         let url = new URL(req.url || String(), `http://${req.headers.host}`)
         let unauthorizedRoutes = ["/", "/process", "/auth/login"]
 
@@ -34,7 +33,7 @@ export default function auth() {
         }
 
         if (url.pathname == "/auth/reset-token") {
-            const user = await prisma.user.findUnique({
+            const user = await prismaClient.user.findUnique({
                 where: {
                     refreshToken: token
                 },
@@ -73,7 +72,7 @@ export default function auth() {
                 throw new Error()
             }
 
-            const user = await prisma.user.findUnique({
+            const user = await prismaClient.user.findUnique({
                 where: {
                     id: userId
                 },

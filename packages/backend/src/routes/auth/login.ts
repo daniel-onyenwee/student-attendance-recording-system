@@ -1,7 +1,7 @@
 import express from "express"
-import { PrismaClient } from "@prisma/client"
 import "dotenv/config"
 import jwt from "jsonwebtoken"
+import { prismaClient } from "../../utils/index.js"
 
 interface LoginRequestBody {
     type: "LECTURER" | "ADMIN" | "STUDENT"
@@ -18,8 +18,6 @@ interface AuthData {
 }
 
 const LoginRoute = express.Router()
-
-const prisma = new PrismaClient()
 
 LoginRoute.post("/", async (req, res) => {
     let body: LoginRequestBody | null = req.body
@@ -92,7 +90,7 @@ LoginRoute.post("/", async (req, res) => {
     let authData: AuthData | null = null
 
     if (body.type == "ADMIN") {
-        authData = await prisma.admin.findUnique({
+        authData = await prismaClient.admin.findUnique({
             where: { username: body.username },
             select: {
                 password: true,
@@ -105,7 +103,7 @@ LoginRoute.post("/", async (req, res) => {
             }
         })
     } else if (body.type == "LECTURER") {
-        authData = await prisma.lecturer.findUnique({
+        authData = await prismaClient.lecturer.findUnique({
             where: { username: body.username },
             select: {
                 password: true,
@@ -118,7 +116,7 @@ LoginRoute.post("/", async (req, res) => {
             }
         })
     } else if (body.type == "STUDENT") {
-        authData = await prisma.student.findUnique({
+        authData = await prismaClient.student.findUnique({
             where: { regno: body.username },
             select: {
                 password: true,
