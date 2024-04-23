@@ -86,7 +86,7 @@ model Department {
 model Course {
   id           String     @id @default(uuid())
   title        String
-  code         String
+  code         String     @unique
   level        Level
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
