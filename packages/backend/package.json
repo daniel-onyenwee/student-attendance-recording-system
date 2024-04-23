@@ -37,6 +37,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.0.7",
+    "signal-exit": "^4.1.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
