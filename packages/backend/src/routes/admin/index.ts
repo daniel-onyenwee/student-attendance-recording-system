@@ -2,6 +2,7 @@ import express from "express"
 import { authAccess } from "../../middleware/index.js"
 import { prismaClient } from "../../utils/index.js"
 import { nanoid } from "nanoid"
+import RecordRoute from "./record/index.js"
 
 interface AdminRequestBody {
     username: string
@@ -299,5 +300,7 @@ AdminRoute.delete("/", async (req, res) => {
         error: null
     })
 })
+
+AdminRoute.use("/record", RecordRoute)
 
 export default AdminRoute
