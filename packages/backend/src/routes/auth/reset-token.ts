@@ -1,5 +1,4 @@
 import express from "express"
-import { PrismaClient } from "@prisma/client"
 import "dotenv/config"
 import jwt from "jsonwebtoken"
 
