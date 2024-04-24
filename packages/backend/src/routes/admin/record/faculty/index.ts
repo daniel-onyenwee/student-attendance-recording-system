@@ -67,7 +67,7 @@ FacultyRoute.post("/", async (req, res) => {
     body.name = body.name || String()
     body.name = body.name = body.name
         .toUpperCase()
-        .replace("OF", String())
+        .replace("FACULTY OF", String())
         .replace("FACULTY", String())
         .trim()
 

@@ -29,7 +29,7 @@ FacultyIDRoute.get("/:facultyId", idValidator("facultyId"), async (req, res) => 
             ok: false,
             error: {
                 message: "Faculty not found",
-                code: 3003
+                code: 3002
             },
             data: null
         })
@@ -50,7 +50,7 @@ FacultyIDRoute.patch("/:facultyId", idValidator("facultyId"), async (req, res) =
     body.name = body.name || String()
     body.name = body.name
         .toUpperCase()
-        .replace("OF", String())
+        .replace("FACULTY OF", String())
         .replace("FACULTY", String())
         .trim()
 
@@ -60,13 +60,13 @@ FacultyIDRoute.patch("/:facultyId", idValidator("facultyId"), async (req, res) =
         }
     })
 
-    if (!facultiesCount) {
+    if (facultiesCount <= 0) {
         res.status(400)
         res.json({
             ok: false,
             error: {
                 message: "Faculty not found",
-                code: 3003
+                code: 3002
             },
             data: null
         })
