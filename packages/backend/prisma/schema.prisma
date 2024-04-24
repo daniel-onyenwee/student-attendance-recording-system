@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Semester {
+  FIRST
+  SECOND
+}
+
 enum Level {
   L_100
   L_200
@@ -87,6 +92,7 @@ model Course {
   id           String     @id @default(uuid())
   title        String
   code         String     @unique
+  semester     Semester
   level        Level
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
