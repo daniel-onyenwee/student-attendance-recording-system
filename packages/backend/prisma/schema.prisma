@@ -128,7 +128,6 @@ model Student {
   password     String
   gender       Gender     @default(MALE)
   level        Level
-  faceImage    String?    @map("face_image")
   user         User       @relation(fields: [id], references: [id], onDelete: Cascade)
   departmentId String     @map("department_id")
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
