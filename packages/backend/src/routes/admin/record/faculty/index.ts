@@ -2,6 +2,12 @@ import express from "express"
 import { prismaClient } from "../../../../utils/index.js"
 import FacultyIDRoute from "./[facultyId].js"
 
+type ArrangeBy = "name" | "updatedAt" | "createdAt"
+
+type ArrangeOrder = "asc" | "desc"
+
+type QueryOrderByObject = Partial<Record<ArrangeBy, ArrangeOrder>>
+
 interface FacultyRequestBody {
     name: string
 }
@@ -20,6 +26,21 @@ FacultyRoute.get("/", async (req, res) => {
     count = !isNaN(count) ? count : 10
     count = count > 0 ? count < 1000 ? count : 1000 : 10
 
+    let searchBy: ArrangeBy = "createdAt"
+    if (url.searchParams.has("by")) {
+        let searchParamValue = url.searchParams.get("by") || ""
+        searchBy = ["name", "updatedAt", "createdAt"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
+    }
+
+    let SearchOrder: ArrangeOrder = "asc"
+    if (url.searchParams.has("order")) {
+        let searchParamValue = url.searchParams.get("order") || ""
+        SearchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
+    }
+
+    let orderBy: QueryOrderByObject = {}
+    orderBy[searchBy] = SearchOrder
+
     const faculties = await prismaClient.faculty.findMany({
         where: {
             name: {
@@ -27,9 +48,7 @@ FacultyRoute.get("/", async (req, res) => {
                 mode: "insensitive"
             },
         },
-        orderBy: {
-            name: "asc"
-        },
+        orderBy,
         skip: page * count,
         take: count,
         select: {

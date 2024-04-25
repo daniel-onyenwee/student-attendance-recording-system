@@ -3,6 +3,16 @@ import DepartmentIDRoute from "./[departmentId].js"
 import { prismaClient } from "../../../../utils/index.js"
 import { $Enums } from "@prisma/client"
 
+type ArrangeBy = "name" | "updatedAt" | "createdAt" | "faculty"
+
+type ArrangeOrder = "asc" | "desc"
+
+type QueryOrderByObject = Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "faculty"> & {
+    faculty: Partial<{
+        name: ArrangeOrder
+    }>
+}>
+
 interface DepartmentRequestBody {
     name: string,
     facultyId: string,
@@ -24,6 +34,27 @@ DepartmentRoute.get("/", async (req, res) => {
     count = !isNaN(count) ? count : 10
     count = count > 0 ? count < 1000 ? count : 1000 : 10
 
+    let searchBy: ArrangeBy = "createdAt"
+    if (url.searchParams.has("by")) {
+        let searchParamValue = url.searchParams.get("by") || ""
+        searchBy = ["name", "updatedAt", "createdAt", "faculty"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
+    }
+
+    let SearchOrder: ArrangeOrder = "asc"
+    if (url.searchParams.has("order")) {
+        let searchParamValue = url.searchParams.get("order") || ""
+        SearchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
+    }
+
+    let orderBy: QueryOrderByObject = {}
+    if (searchBy == "faculty") {
+        orderBy[searchBy] = {
+            name: SearchOrder
+        }
+    } else {
+        orderBy[searchBy] = SearchOrder
+    }
+
     const departmentsQuery = await prismaClient.department.findMany({
         where: {
             name: {
@@ -37,9 +68,7 @@ DepartmentRoute.get("/", async (req, res) => {
                 }
             }
         },
-        orderBy: {
-            name: "asc"
-        },
+        orderBy,
         skip: page * count,
         take: count,
         select: {
@@ -88,7 +117,7 @@ DepartmentRoute.post("/", async (req, res) => {
     }
 
     body.name = body.name || String()
-    body.name = body.name = body.name
+    body.name = body.name
         .toUpperCase()
         .replace("DEPARTMENT OF", String())
         .replace("DEPARTMENT", String())
