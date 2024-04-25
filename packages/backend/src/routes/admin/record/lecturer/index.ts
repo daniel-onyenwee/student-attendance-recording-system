@@ -249,19 +249,18 @@ LecturerRoute.post("/", async (req, res) => {
         return
     }
 
-    if (body.gender) {
-        if (!["MALE", "FEMALE"].includes(body.gender)) {
-            res.status(400)
-            res.json({
-                ok: false,
-                error: {
-                    message: "Invalid gender format",
-                    code: 3019
-                },
-                data: null
-            })
-            return
-        }
+    body.gender = body.gender || "MALE"
+    if (!["MALE", "FEMALE"].includes(body.gender)) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Invalid gender format",
+                code: 3019
+            },
+            data: null
+        })
+        return
     }
 
     body.password = body.password || "password"
@@ -306,7 +305,7 @@ LecturerRoute.post("/", async (req, res) => {
 
     let generatedRefreshToken = nanoid(64)
 
-    const lecturer = await prismaClient.user.create({
+    const user = await prismaClient.user.create({
         data: {
             refreshToken: generatedRefreshToken,
             type: "LECTURER",
@@ -340,7 +339,7 @@ LecturerRoute.post("/", async (req, res) => {
         }
     })
 
-    const { id, lecturers: [lecturerData] } = lecturer
+    const { id, lecturers: [lecturerData] } = user
     const { surname, otherNames, password, username, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = lecturerData
 
     res.status(200)
