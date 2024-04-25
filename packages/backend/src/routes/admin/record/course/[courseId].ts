@@ -3,7 +3,7 @@ import { idValidator } from "../../../../middleware/index.js"
 import { prismaClient, removeSpecialChar } from "../../../../utils/index.js"
 import { $Enums } from "@prisma/client"
 
-interface CourseIdRequestBody {
+interface CourseIDRequestBody {
     title: string
     code: string
     level: $Enums.Level
@@ -102,8 +102,8 @@ CourseIdRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
         return
     }
 
-    let body: CourseIdRequestBody = req.body || {}
-    let updateData: Partial<CourseIdRequestBody> = {}
+    let body: CourseIDRequestBody = req.body || {}
+    let updateData: Partial<CourseIDRequestBody> = {}
 
     if (body.departmentId) {
         const departmentsCount = await prismaClient.department.count({
