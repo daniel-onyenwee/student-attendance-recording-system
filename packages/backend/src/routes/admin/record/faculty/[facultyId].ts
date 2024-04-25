@@ -127,6 +127,25 @@ FacultyIDRoute.patch("/:facultyId", idValidator("facultyId"), async (req, res) =
 FacultyIDRoute.delete("/:facultyId", idValidator("facultyId"), async (req, res) => {
     let facultyId = req.params.facultyId
 
+    let facultiesCount = await prismaClient.faculty.count({
+        where: {
+            id: facultyId
+        }
+    })
+
+    if (facultiesCount <= 0) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Faculty not found",
+                code: 3002
+            },
+            data: null
+        })
+        return
+    }
+
     const faculty = await prismaClient.faculty.delete({
         where: {
             id: facultyId

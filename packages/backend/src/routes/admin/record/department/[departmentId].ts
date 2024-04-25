@@ -83,6 +83,7 @@ DepartmentIDRoute.patch("/:departmentId", idValidator("departmentId"), async (re
         })
         return
     }
+
     let body: DepartmentIDRequestBody = req.body || {}
     body.name = body.name || String()
     body.name = body.name
@@ -189,6 +190,25 @@ DepartmentIDRoute.patch("/:departmentId", idValidator("departmentId"), async (re
 
 DepartmentIDRoute.delete("/:departmentId", idValidator("departmentId"), async (req, res) => {
     let departmentId = req.params.departmentId
+
+    let departmentsCount = await prismaClient.department.count({
+        where: {
+            id: departmentId
+        }
+    })
+
+    if (departmentsCount <= 0) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Department not found",
+                code: 3006
+            },
+            data: null
+        })
+        return
+    }
 
     let department = await prismaClient.department.delete({
         where: {
