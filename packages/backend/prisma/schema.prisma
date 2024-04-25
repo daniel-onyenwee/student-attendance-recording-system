@@ -105,7 +105,8 @@ model Course {
 
 model Lecturer {
   id           String     @id @default(uuid())
-  name         String
+  surname      String     @map("surname")
+  otherNames   String     @map("other_names")
   gender       Gender     @default(MALE)
   username     String     @unique
   password     String
@@ -121,7 +122,8 @@ model Lecturer {
 
 model Student {
   id           String     @id @default(uuid())
-  name         String
+  surname      String     @map("surname")
+  otherNames   String     @map("other_names")
   regno        String     @unique
   password     String
   gender       Gender     @default(MALE)
