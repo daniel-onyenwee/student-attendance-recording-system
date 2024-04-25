@@ -7,14 +7,14 @@ type ArrangeBy = "title" | "code" | "semester" | "updatedAt" | "createdAt" | "de
 
 type ArrangeOrder = "asc" | "desc"
 
-type QueryOrderByObject = Partial<Omit<Omit<Record<ArrangeBy, ArrangeOrder>, "department"> & {
-    department: Partial<{
+type QueryOrderByObject = Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "department" | "faculty">> & {
+    department?: Partial<{
         name: ArrangeOrder,
         faculty: {
             name: ArrangeOrder,
         }
     }>
-}, "faculty">>
+}
 
 interface CourseRequestBody {
     title: string
@@ -57,29 +57,29 @@ CourseRoute.get("/", async (req, res) => {
         searchBy = ["title", "code", "semester", "updatedAt", "createdAt", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
     }
 
-    let SearchOrder: ArrangeOrder = "asc"
+    let searchOrder: ArrangeOrder = "asc"
     if (url.searchParams.has("order")) {
         let searchParamValue = url.searchParams.get("order") || ""
-        SearchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
+        searchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
     }
 
     let orderBy: QueryOrderByObject = {}
     if (searchBy == "department") {
         orderBy = {
             department: {
-                name: SearchOrder
+                name: searchOrder
             }
         }
     } else if (searchBy == "faculty") {
         orderBy = {
             department: {
                 faculty: {
-                    name: SearchOrder
+                    name: searchOrder
                 }
             }
         }
     } else {
-        orderBy[searchBy] = SearchOrder
+        orderBy[searchBy] = searchOrder
     }
 
     const coursesQuery = await prismaClient.course.findMany({

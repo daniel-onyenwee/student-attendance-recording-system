@@ -32,14 +32,14 @@ FacultyRoute.get("/", async (req, res) => {
         searchBy = ["name", "updatedAt", "createdAt"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
     }
 
-    let SearchOrder: ArrangeOrder = "asc"
+    let searchOrder: ArrangeOrder = "asc"
     if (url.searchParams.has("order")) {
         let searchParamValue = url.searchParams.get("order") || ""
-        SearchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
+        searchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
     }
 
     let orderBy: QueryOrderByObject = {}
-    orderBy[searchBy] = SearchOrder
+    orderBy[searchBy] = searchOrder
 
     const faculties = await prismaClient.faculty.findMany({
         where: {
