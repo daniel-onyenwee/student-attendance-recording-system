@@ -70,7 +70,7 @@ LecturerIDRoute.get("/:lecturerId", idValidator("lecturerId"), async (req, res) 
             createdAt,
             updatedAt,
             department: departmentName,
-            facultyName: facultyName
+            faculty: facultyName
         },
         error: null
     })
@@ -222,7 +222,7 @@ LecturerIDRoute.patch("/:lecturerId", idValidator("lecturerId"), async (req, res
             createdAt,
             updatedAt,
             department: departmentName,
-            facultyName: facultyName
+            faculty: facultyName
         },
         error: null
     })
@@ -250,7 +250,7 @@ LecturerIDRoute.delete("/:lecturerId", idValidator("lecturerId"), async (req, re
         return
     }
 
-    let lecturer = await prismaClient.user.delete({
+    let user = await prismaClient.user.delete({
         where: {
             id: lecturerId
         },
@@ -280,7 +280,7 @@ LecturerIDRoute.delete("/:lecturerId", idValidator("lecturerId"), async (req, re
         }
     })
 
-    const { id, lecturers: [lecturerData] } = lecturer
+    const { id, lecturers: [lecturerData] } = user
     const { surname, otherNames, password, username, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = lecturerData
 
     res.status(200)
@@ -295,7 +295,7 @@ LecturerIDRoute.delete("/:lecturerId", idValidator("lecturerId"), async (req, re
             createdAt,
             updatedAt,
             department: departmentName,
-            facultyName: facultyName
+            faculty: facultyName
         },
         error: null
     })
