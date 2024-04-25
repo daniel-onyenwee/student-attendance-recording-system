@@ -124,7 +124,9 @@ LecturerRoute.get("/", async (req, res) => {
                     surname: {
                         contains: name,
                         mode: "insensitive"
-                    },
+                    }
+                },
+                {
                     otherNames: {
                         contains: name,
                         mode: "insensitive"
