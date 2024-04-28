@@ -16,6 +16,11 @@ export default function auth() {
             return
         }
 
+        if (url.pathname.startsWith("/image")) {
+            next()
+            return
+        }
+
         const authHeader = req.header("authorization")
         const token = authHeader && authHeader.split(" ")[1]
 
