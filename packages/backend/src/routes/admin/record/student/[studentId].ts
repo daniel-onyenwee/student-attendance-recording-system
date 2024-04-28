@@ -1,7 +1,9 @@
 import { $Enums } from "@prisma/client"
 import express from "express"
+import { Image } from "canvas"
+import * as faceapi from "face-api.js"
 import { idValidator } from "../../../../middleware/index.js"
-import { prismaClient } from "../../../../utils/index.js"
+import { faceDetectionOptions, prismaClient } from "../../../../utils/index.js"
 
 interface StudentIDRequestBody {
     surname: string
@@ -28,7 +30,6 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
             gender: true,
             otherNames: true,
             regno: true,
-            faceImage: true,
             level: true,
             password: true,
             department: {
@@ -59,7 +60,23 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
         return
     }
 
-    const { id, surname, faceImage, otherNames, password, regno, level, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = student
+    const {
+        id,
+        surname,
+        otherNames,
+        password,
+        regno,
+        level,
+        gender,
+        createdAt,
+        updatedAt,
+        department: {
+            name: departmentName,
+            faculty: {
+                name: facultyName
+            }
+        }
+    } = student
 
     res.status(200)
     res.json({
@@ -69,13 +86,107 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
             name: `${surname} ${otherNames}`.toUpperCase(),
             regno,
             password,
-            faceImage,
+            faceImage: "",
             gender,
             level,
             createdAt,
             updatedAt,
             department: departmentName,
             faculty: facultyName
+        },
+        error: null
+    })
+})
+
+// Set a minimum size of the image to upload
+StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (req, res) => {
+    let studentId = req.params.studentId
+    let files = req.files
+
+    if (!files) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Missing parameter 'faceImage'",
+                code: 3024
+            },
+            data: null
+        })
+        return
+    }
+
+    let faceImageFile = files.faceImage
+
+    if (!faceImageFile) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Missing parameter 'faceImage'",
+                code: 3024
+            },
+            data: null
+        })
+        return
+    }
+
+    if (Array.isArray(faceImageFile)) {
+        faceImageFile = faceImageFile[0]
+    }
+
+    const faceImage = new Image()
+    faceImage.src = faceImageFile.data
+
+    const detections = await faceapi.detectAllFaces(faceImage as any, faceDetectionOptions)
+
+    if (detections.length <= 0) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "No face detected",
+                code: 3025
+            },
+            data: null
+        })
+        return
+    }
+
+    if (detections.length > 1) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Many faces detected",
+                code: 3026
+            },
+            data: null
+        })
+        return
+    }
+
+    await prismaClient.studentFace.upsert({
+        where: {
+            studentId,
+        },
+        update: {
+            image: faceImageFile.data.toString("base64"),
+            mineType: faceImageFile.mimetype
+        },
+        create: {
+            studentId,
+            image: faceImageFile.data.toString("base64"),
+            mineType: faceImageFile.mimetype
+        }
+    })
+
+    let faceImageUrl = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+    res.status(200)
+    res.json({
+        ok: true,
+        data: {
+            faceImageUrl
         },
         error: null
     })
@@ -234,7 +345,6 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
             gender: true,
             otherNames: true,
             regno: true,
-            faceImage: true,
             level: true,
             password: true,
             department: {
@@ -252,7 +362,23 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
         }
     })
 
-    const { id, surname, faceImage, otherNames, password, regno, level, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = student
+    const {
+        id,
+        surname,
+        otherNames,
+        password,
+        regno,
+        level,
+        gender,
+        createdAt,
+        updatedAt,
+        department: {
+            name: departmentName,
+            faculty: {
+                name: facultyName
+            }
+        }
+    } = student
 
     res.status(200)
     res.json({
@@ -262,7 +388,7 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
             name: `${surname} ${otherNames}`.toUpperCase(),
             regno,
             password,
-            faceImage,
+            faceImage: "",
             gender,
             level,
             createdAt,
@@ -308,7 +434,6 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
                     gender: true,
                     otherNames: true,
                     regno: true,
-                    faceImage: true,
                     level: true,
                     password: true,
                     department: {
@@ -329,7 +454,22 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
     })
 
     const { id, students: [studentData] } = user
-    const { surname, faceImage, otherNames, password, regno, level, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = studentData
+    const {
+        surname,
+        otherNames,
+        password,
+        regno,
+        level,
+        gender,
+        createdAt,
+        updatedAt,
+        department: {
+            name: departmentName,
+            faculty: {
+                name: facultyName
+            }
+        }
+    } = studentData
 
     res.status(200)
     res.json({
@@ -339,7 +479,7 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
             name: `${surname} ${otherNames}`.toUpperCase(),
             password,
             regno,
-            faceImage,
+            faceImage: "",
             level,
             gender,
             department: departmentName,

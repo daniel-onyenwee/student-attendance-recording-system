@@ -157,7 +157,6 @@ StudentRoute.get("/", async (req, res) => {
             level: true,
             regno: true,
             password: true,
-            faceImage: true,
             department: {
                 select: {
                     name: true,
@@ -366,7 +365,6 @@ StudentRoute.post("/", async (req, res) => {
                     otherNames: true,
                     level: true,
                     regno: true,
-                    faceImage: true,
                     password: true,
                     department: {
                         select: {
@@ -386,7 +384,22 @@ StudentRoute.post("/", async (req, res) => {
     })
 
     const { id, students: [studentData] } = user
-    const { surname, faceImage, otherNames, password, regno, level, gender, createdAt, updatedAt, department: { name: departmentName, faculty: { name: facultyName } } } = studentData
+    const {
+        surname,
+        otherNames,
+        password,
+        regno,
+        level,
+        gender,
+        createdAt,
+        updatedAt,
+        department: {
+            name: departmentName,
+            faculty: {
+                name: facultyName
+            }
+        }
+    } = studentData
 
     res.status(200)
     res.json({
@@ -397,7 +410,7 @@ StudentRoute.post("/", async (req, res) => {
             password,
             regno,
             level,
-            faceImage,
+            faceImage: "",
             gender,
             department: departmentName,
             faculty: facultyName,
