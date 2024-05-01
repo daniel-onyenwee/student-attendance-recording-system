@@ -78,6 +78,8 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
         }
     } = student
 
+    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+
     res.status(200)
     res.json({
         ok: true,
@@ -86,7 +88,7 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
             name: `${surname} ${otherNames}`.toUpperCase(),
             regno,
             password,
-            faceImage: "",
+            faceImage,
             gender,
             level,
             createdAt,
@@ -186,7 +188,7 @@ StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (r
     res.json({
         ok: true,
         data: {
-            faceImageUrl
+            faceImage: faceImageUrl
         },
         error: null
     })
@@ -380,6 +382,8 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
         }
     } = student
 
+    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+
     res.status(200)
     res.json({
         ok: true,
@@ -388,7 +392,7 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
             name: `${surname} ${otherNames}`.toUpperCase(),
             regno,
             password,
-            faceImage: "",
+            faceImage,
             gender,
             level,
             createdAt,
@@ -471,6 +475,8 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
         }
     } = studentData
 
+    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+
     res.status(200)
     res.json({
         ok: true,
@@ -479,7 +485,7 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
             name: `${surname} ${otherNames}`.toUpperCase(),
             password,
             regno,
-            faceImage: "",
+            faceImage,
             level,
             gender,
             department: departmentName,
