@@ -12,11 +12,6 @@ enum ClassAttendeeStatus {
   ABSENT
 }
 
-enum StudentAttendanceRegisterStatus {
-  ADMIT
-  REJECT
-}
-
 enum Semester {
   FIRST
   SECOND
@@ -201,15 +196,14 @@ model AttendanceRegisterLecturer {
 }
 
 model AttendanceRegisterStudent {
-  id                   String                          @id @default(uuid())
-  attendanceRegisterId String                          @map("attendance_register_id")
-  attendanceRegister   AttendanceRegister              @relation(fields: [attendanceRegisterId], references: [id], onDelete: Cascade)
-  studentId            String                          @map("student_id")
-  student              Student                         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  decision             StudentAttendanceRegisterStatus @default(REJECT)
-  createdAt            DateTime                        @default(now()) @map("created_at")
-  updatedAt            DateTime                        @updatedAt @map("updated_at")
-  metadata             Json                            @default("{}")
+  id                   String             @id @default(uuid())
+  attendanceRegisterId String             @map("attendance_register_id")
+  attendanceRegister   AttendanceRegister @relation(fields: [attendanceRegisterId], references: [id], onDelete: Cascade)
+  studentId            String             @map("student_id")
+  student              Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  metadata             Json               @default("{}")
   classAttendees       ClassAttendee[]
 
   @@unique([attendanceRegisterId, studentId])
