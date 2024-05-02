@@ -223,6 +223,7 @@ model ClassAttendance {
   metadata                     Json                       @default("{}")
   classAttendees               ClassAttendee[]
 
+  @@unique([attendanceRegisterId, attendanceRegisterLecturerId, startTime])
   @@map("class_attendances")
 }
 
