@@ -242,19 +242,19 @@ model ClassAttendee {
 }
 
 model CrashCourseAttendance {
-  id         String   @id @default(uuid())
-  courseId   String   @map("course_id")
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentId  String   @map("student_id")
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  lecturerId String   @map("lecturer_id")
-  lecturer   Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  courseId   String    @map("course_id")
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId  String    @map("student_id")
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   session    String
-  startTime  DateTime @map("start_time")
-  endTime    DateTime @map("end_time")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  metadata   Json     @default("{}")
+  startTime  DateTime  @map("start_time")
+  endTime    DateTime  @map("end_time")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  metadata   Json      @default("{}")
+  Lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
+  lecturerId String?
 
   @@map("crash_course_attendances")
 }
