@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ClassAttendeeStatus {
-  PRESENT
-  ABSENT
-}
-
 enum Semester {
   FIRST
   SECOND
@@ -106,6 +101,7 @@ model Course {
   metadata               Json                    @default("{}")
   attendanceRegisters    AttendanceRegister[]
   crashCourseAttendances CrashCourseAttendance[]
+  classAttendees         ClassAttendee[]
 
   @@map("courses")
 }
@@ -233,7 +229,8 @@ model ClassAttendee {
   classAttendance             ClassAttendance           @relation(fields: [classAttendanceId], references: [id], onDelete: Cascade)
   attendanceRegisterStudentId String                    @map("attendance_register_student_id")
   attendanceRegisterStudent   AttendanceRegisterStudent @relation(fields: [attendanceRegisterStudentId], references: [id], onDelete: Cascade)
-  status                      ClassAttendeeStatus       @default(ABSENT)
+  crashCourseId               String?                   @map("crash_course_id")
+  crashCourse                 Course?                   @relation(fields: [crashCourseId], references: [id], onDelete: SetNull)
   createdAt                   DateTime                  @default(now()) @map("created_at")
   updatedAt                   DateTime                  @updatedAt @map("updated_at")
   metadata                    Json                      @default("{}")
