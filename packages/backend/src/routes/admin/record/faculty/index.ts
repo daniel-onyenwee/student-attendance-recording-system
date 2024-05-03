@@ -95,7 +95,7 @@ FacultyRoute.post("/", async (req, res) => {
         res.json({
             ok: false,
             error: {
-                message: "Missing parameter 'faculty name'",
+                message: "Missing parameter 'name'",
                 code: 3000
             },
             data: null
