@@ -11,9 +11,9 @@ interface CourseIDRequestBody {
     departmentId: string
 }
 
-const CourseIdRoute = express.Router()
+const CourseIDRoute = express.Router()
 
-CourseIdRoute.get("/:courseId", idValidator("courseId"), async (req, res) => {
+CourseIDRoute.get("/:courseId", idValidator("courseId"), async (req, res) => {
     let courseId = req.params.courseId
 
     let course = await prismaClient.course.findUnique({
@@ -73,7 +73,7 @@ CourseIdRoute.get("/:courseId", idValidator("courseId"), async (req, res) => {
     })
 })
 
-CourseIdRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
+CourseIDRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
     let courseId = req.params.courseId
 
     let coursesCount = await prismaClient.course.findUnique({
@@ -266,7 +266,7 @@ CourseIdRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
     })
 })
 
-CourseIdRoute.delete("/:courseId", idValidator("courseId"), async (req, res) => {
+CourseIDRoute.delete("/:courseId", idValidator("courseId"), async (req, res) => {
     let courseId = req.params.courseId
 
     let coursesCount = await prismaClient.course.count({
@@ -332,4 +332,4 @@ CourseIdRoute.delete("/:courseId", idValidator("courseId"), async (req, res) => 
     })
 })
 
-export default CourseIdRoute
+export default CourseIDRoute

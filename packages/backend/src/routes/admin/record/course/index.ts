@@ -1,5 +1,5 @@
 import express from "express"
-import CourseIdRoute from "./[courseId].js"
+import CourseIDRoute from "./[courseId].js"
 import { prismaClient, removeSpecialChar } from "../../../../utils/index.js"
 import { $Enums } from "@prisma/client"
 
@@ -349,6 +349,6 @@ CourseRoute.post("/", async (req, res) => {
     })
 })
 
-CourseRoute.use("/", CourseIdRoute)
+CourseRoute.use("/", CourseIDRoute)
 
 export default CourseRoute
