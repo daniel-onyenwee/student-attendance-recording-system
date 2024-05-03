@@ -128,7 +128,7 @@ DepartmentRoute.post("/", async (req, res) => {
         res.json({
             ok: false,
             error: {
-                message: "Missing parameter 'department name'",
+                message: "Missing parameter 'name'",
                 code: 3003
             },
             data: null
