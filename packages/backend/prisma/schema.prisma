@@ -248,8 +248,9 @@ model CrashCourseAttendance {
   studentId String   @map("student_id")
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   session   String
-  startTime DateTime @map("start_time")
-  endTime   DateTime @map("end_time")
+  date      DateTime @db.Date
+  startTime DateTime @map("start_time") @db.Time()
+  endTime   DateTime @map("end_time") @db.Time()
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   metadata  Json     @default("{}")
