@@ -213,8 +213,9 @@ model ClassAttendance {
   id                           String                     @id @default(uuid())
   attendanceRegisterId         String                     @map("attendance_register_id")
   attendanceRegister           AttendanceRegister         @relation(fields: [attendanceRegisterId], references: [id], onDelete: Cascade)
-  startTime                    DateTime                   @map("start_time")
-  endTime                      DateTime                   @map("end_time")
+  date                         DateTime                   @db.Date
+  startTime                    DateTime                   @map("start_time") @db.Time()
+  endTime                      DateTime                   @map("end_time") @db.Time()
   attendanceRegisterLecturerId String                     @map("attendance_register_lecturer_id")
   attendanceRegisterLecturer   AttendanceRegisterLecturer @relation(fields: [attendanceRegisterLecturerId], references: [id], onDelete: Cascade)
   createdAt                    DateTime                   @default(now()) @map("created_at")
