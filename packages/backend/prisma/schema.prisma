@@ -235,6 +235,7 @@ model ClassAttendee {
   updatedAt                   DateTime                  @updatedAt @map("updated_at")
   metadata                    Json                      @default("{}")
 
+  @@unique([classAttendanceId, attendanceRegisterStudentId])
   @@map("class_attendees")
 }
 
