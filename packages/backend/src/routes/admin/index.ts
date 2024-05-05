@@ -3,6 +3,7 @@ import { authAccess } from "../../middleware/index.js"
 import { prismaClient } from "../../utils/index.js"
 import { nanoid } from "nanoid"
 import RecordRoute from "./record/index.js"
+import AttendanceRoute from "./attendance/index.js"
 
 interface AdminRequestBody {
     username: string
@@ -302,5 +303,7 @@ AdminRoute.delete("/", async (req, res) => {
 })
 
 AdminRoute.use("/record", RecordRoute)
+
+AdminRoute.use("/attendance", AttendanceRoute)
 
 export default AdminRoute
