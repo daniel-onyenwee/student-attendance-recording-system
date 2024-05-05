@@ -1,3 +1,5 @@
 export { default as prismaClient } from "./prisma-client.js"
 export { default as removeSpecialChar } from "./remove-special-char.js"
+export { default as getCurrentSession } from "./get-current-session.js"
+export { attendanceRegisterDecisionExpressionTypeChecker, attendanceRegisterStudentDecisionDeterminer } from "./attendance-register/index.js"
 export { faceDetectionNet, faceDetectionOptions } from "./face-detection.js"
