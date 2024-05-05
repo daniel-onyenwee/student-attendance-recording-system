@@ -34,6 +34,8 @@ DepartmentRoute.get("/", async (req, res) => {
     count = !isNaN(count) ? count : 10
     count = count > 0 ? count < 1000 ? count : 1000 : 10
 
+    let getAllRecord = url.searchParams.has("all")
+
     let searchBy: ArrangeBy = "createdAt"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
@@ -69,8 +71,8 @@ DepartmentRoute.get("/", async (req, res) => {
             }
         },
         orderBy,
-        skip: page * count,
-        take: count,
+        skip: !getAllRecord ? page * count : undefined,
+        take: !getAllRecord ? count : undefined,
         select: {
             name: true,
             id: true,
