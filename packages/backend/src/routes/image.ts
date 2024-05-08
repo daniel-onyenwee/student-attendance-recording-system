@@ -1,6 +1,6 @@
 import express from "express"
-import { prismaClient } from "../../utils/index.js"
-import idValidator from "../../middleware/id-validator.js"
+import { prismaClient } from "../utils/index.js"
+import idValidator from "../middleware/id-validator.js"
 import { dirname, join } from "path"
 import { fileURLToPath } from 'url'
 
@@ -29,7 +29,7 @@ ImageRoute.get("/student-:studentId-face", idValidator("studentId"), async (req,
         res.send(Buffer.from(studentFace.image, "base64"))
     } catch (error) {
         res.status(400)
-        res.sendFile("../../public/blank-profile.png")
+        res.sendFile(join(__dirname, "../../../public/blank-profile.png"))
     }
 })
 
