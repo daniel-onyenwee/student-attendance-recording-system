@@ -9,7 +9,7 @@ import { prismaClient } from "../utils/index.js"
 export default function auth() {
     return async function (req: Request, res: Response, next: NextFunction) {
         let url = new URL(req.url || String(), `http://${req.headers.host}`)
-        let unauthorizedRoutes = ["/", "/process", "/auth/login"]
+        let unauthorizedRoutes = ["/", "/process", "/auth/login", "/report"]
 
         if (unauthorizedRoutes.includes(url.pathname)) {
             next()
