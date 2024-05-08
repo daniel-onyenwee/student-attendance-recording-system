@@ -4,6 +4,7 @@ import { prismaClient } from "../../utils/index.js"
 import { nanoid } from "nanoid"
 import RecordRoute from "./record/index.js"
 import AttendanceRoute from "./attendance/index.js"
+import ReportRoute from "./report/index.js"
 
 interface AdminRequestBody {
     username: string
@@ -305,5 +306,7 @@ AdminRoute.delete("/", async (req, res) => {
 AdminRoute.use("/record", RecordRoute)
 
 AdminRoute.use("/attendance", AttendanceRoute)
+
+AdminRoute.use("/report", ReportRoute)
 
 export default AdminRoute
