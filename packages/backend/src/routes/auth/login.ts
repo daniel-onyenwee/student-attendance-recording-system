@@ -164,8 +164,8 @@ LoginRoute.post("/", async (req, res) => {
     res.json({
         ok: true,
         data: {
-            refresh_token: refreshToken,
-            access_token: accessToken
+            refreshToken,
+            accessToken
         },
         error: null
     })
