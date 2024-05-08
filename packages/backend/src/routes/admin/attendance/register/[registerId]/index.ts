@@ -304,8 +304,8 @@ RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) 
                 department: departmentName,
                 faculty: facultyName,
                 attendances,
-                classAttended: studentNumberOfClassAttended,
-                classAttendedPercentage: studentPercentageOfClassAttended,
+                classesAttended: studentNumberOfClassAttended,
+                classesAttendedPercentage: studentPercentageOfClassAttended,
                 decision: attendanceRegisterStudentDecisionDeterminer(
                     {
                         StudentName: `${surname} ${otherNames}`.toString(),
