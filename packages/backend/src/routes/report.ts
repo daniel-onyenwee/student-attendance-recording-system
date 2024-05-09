@@ -183,8 +183,8 @@ async function generateLecturerReport(lecturerId: string, session: string): Prom
         { header: "Course title", key: "courseTitle", width: 35 },
         { header: "Course code", key: "courseCode", width: 15 },
         { header: "Total classes", key: "totalClasses", width: 15 },
-        { header: "Classes attended", key: "classesAttended", width: 20 },
-        { header: "Classes attended percentage", width: 30, key: "classesAttendedPercentage" }
+        { header: "Classes taught", key: "classesTaught", width: 20 },
+        { header: "Classes taught percentage", width: 28, key: "classesTaughtPercentage" }
     ]
 
     let courses = attendanceRegisterQuery.map(({ course, _count, classAttendances }) => {
@@ -192,8 +192,8 @@ async function generateLecturerReport(lecturerId: string, session: string): Prom
             courseCode: course.code,
             courseTitle: course.title,
             totalClasses: _count.classAttendances,
-            classesAttended: classAttendances.length,
-            classesAttendedPercentage: (classAttendances.length / _count.classAttendances) * 100
+            classesTaught: classAttendances.length,
+            classesTaughtPercentage: (classAttendances.length / _count.classAttendances) * 100
         })
     })
 
