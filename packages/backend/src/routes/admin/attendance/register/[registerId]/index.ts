@@ -6,7 +6,6 @@ import {
     prismaClient
 } from "../../../../../utils/index.js"
 import RegisterIDRecordRoute from "./record.js"
-import ClassAttendanceRoute from "./class-attendance/index.js"
 
 interface RegisterIDRequestBody {
     courseId: string
@@ -668,7 +667,5 @@ RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, re
 })
 
 RegisterIDRoute.use("/", RegisterIDRecordRoute)
-
-RegisterIDRoute.use("/", ClassAttendanceRoute)
 
 export default RegisterIDRoute
