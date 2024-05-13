@@ -12,6 +12,20 @@ enum Semester {
   SECOND
 }
 
+enum ClassAttendanceStatus {
+  ONGOING
+  REVIEWING
+  COMPLETED
+}
+
+enum ClassSize {
+  EXTRA_SMALL
+  SMALL
+  MEDIUM
+  LARGE
+  EXTRA_LARGE
+}
+
 enum Level {
   L_100
   L_200
@@ -210,6 +224,7 @@ model ClassAttendance {
   attendanceRegisterId         String                     @map("attendance_register_id")
   attendanceRegister           AttendanceRegister         @relation(fields: [attendanceRegisterId], references: [id], onDelete: Cascade)
   date                         DateTime                   @db.Date
+  status                       ClassAttendanceStatus
   startTime                    DateTime                   @map("start_time") @db.Time()
   endTime                      DateTime                   @map("end_time") @db.Time()
   attendanceRegisterLecturerId String                     @map("attendance_register_lecturer_id")
@@ -218,9 +233,21 @@ model ClassAttendance {
   updatedAt                    DateTime                   @updatedAt @map("updated_at")
   metadata                     Json                       @default("{}")
   classAttendees               ClassAttendee[]
+  classLocation                ClassLocation?
 
   @@unique([attendanceRegisterId, attendanceRegisterLecturerId, date])
   @@map("class_attendances")
+}
+
+model ClassLocation {
+  id                String          @id @default(uuid())
+  classAttendanceId String          @unique @map("class_attendance_id")
+  latitude          Decimal
+  longitude         Decimal
+  classSize         ClassSize       @default(MEDIUM)
+  classAttendance   ClassAttendance @relation(fields: [classAttendanceId], references: [id], onDelete: Cascade)
+
+  @@map("class_locations")
 }
 
 model ClassAttendee {
