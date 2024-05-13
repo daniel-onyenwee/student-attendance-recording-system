@@ -42,7 +42,7 @@ AdminRoute.get("/", async (req, res) => {
             ok: false,
             error: {
                 message: "Admin not found",
-                code: 3001
+                code: 2008
             },
             data: null
         })
@@ -185,7 +185,7 @@ AdminRoute.patch("/", async (req, res) => {
             ok: false,
             error: {
                 message: "Admin not found",
-                code: 3001
+                code: 2008
             },
             data: null
         })
@@ -249,7 +249,7 @@ AdminRoute.patch("/", async (req, res) => {
             ok: false,
             error: {
                 message: "Admin not found",
-                code: 3001
+                code: 2008
             },
             data: null
         })
@@ -275,12 +275,27 @@ AdminRoute.patch("/", async (req, res) => {
 AdminRoute.delete("/", async (req, res) => {
     let userId = req.app.get("user-id")
 
+    const adminsCount = await prismaClient.admin.count()
+
+    if (adminsCount <= 1) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Last admin not deletable",
+                code: 2009
+            },
+            data: null
+        })
+        return
+    }
+
     let { refreshToken, admins: [otherData] } = await prismaClient.user.delete({
         where: { id: userId },
         select: {
             refreshToken: true,
             admins: {
-                distinct: ["id"],
+                distinct: "id",
                 select: {
                     id: true,
                     createdAt: true,
