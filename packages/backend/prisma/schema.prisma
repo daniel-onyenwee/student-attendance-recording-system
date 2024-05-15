@@ -225,7 +225,7 @@ model ClassAttendance {
   date                         DateTime                   @db.Date
   status                       ClassAttendanceStatus
   startTime                    DateTime                   @map("start_time") @db.Time()
-  endTime                      DateTime?                  @map("end_time") @db.Time()
+  endTime                      DateTime                   @map("end_time") @db.Time()
   attendanceRegisterLecturerId String                     @map("attendance_register_lecturer_id")
   attendanceRegisterLecturer   AttendanceRegisterLecturer @relation(fields: [attendanceRegisterLecturerId], references: [id], onDelete: Cascade)
   createdAt                    DateTime                   @default(now()) @map("created_at")
