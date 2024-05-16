@@ -26,6 +26,11 @@ enum ClassSize {
   EXTRA_LARGE
 }
 
+enum ClassShape {
+  CIRCLE
+  SQUARE
+}
+
 enum Level {
   L_100
   L_200
@@ -244,7 +249,8 @@ model ClassLocation {
   classAttendanceId String          @unique @map("class_attendance_id")
   latitude          Decimal
   longitude         Decimal
-  classSize         ClassSize       @default(MEDIUM)
+  classSize         ClassSize       @default(MEDIUM) @map("class_size")
+  classShape        ClassShape      @default(SQUARE) @map("class_shape")
   classAttendance   ClassAttendance @relation(fields: [classAttendanceId], references: [id], onDelete: Cascade)
 
   @@map("class_locations")
