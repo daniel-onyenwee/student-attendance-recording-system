@@ -240,7 +240,7 @@ model ClassAttendance {
   classAttendees               ClassAttendee[]
   classLocation                ClassLocation?
 
-  @@unique([attendanceRegisterId, attendanceRegisterLecturerId, date])
+  @@unique([attendanceRegisterId, date])
   @@map("class_attendances")
 }
 
