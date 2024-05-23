@@ -1,6 +1,7 @@
 import express from "express"
-import { idValidator } from "../../../../middleware/index.js"
-import { prismaClient } from "../../../../utils/index.js"
+import { idValidator } from "../../../../../middleware/index.js"
+import { prismaClient } from "../../../../../utils/index.js"
+import AcceptRoute from "./accept.js"
 
 interface ClassAttendeeSurnameQueryOrderByObject {
     attendanceRegisterStudent: {
@@ -24,8 +25,10 @@ type QueryOrderByObject = {
             regno: ArrangeOrder
         }
     }
-    crashCourse?: {
-        code: ArrangeOrder
+    crashCourseAttendance?: {
+        course: {
+            code: ArrangeOrder
+        }
     }
 } | (ClassAttendeeSurnameQueryOrderByObject | ClassAttendeeOtherNamesQueryOrderByObject)[]
 
@@ -36,6 +39,7 @@ type ArrangeOrder = "asc" | "desc"
 interface ClassAttendanceIDRouteRequestBody {
     studentId: string
     status: "PRESENT" | "ABSENT"
+    crashCourseId?: string
 }
 
 const ClassAttendanceIDRoute = express.Router()
@@ -98,8 +102,10 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
         }
     } else {
         orderBy = {
-            crashCourse: {
-                code: searchOrder
+            crashCourseAttendance: {
+                course: {
+                    code: "asc"
+                }
             }
         }
     }
@@ -112,20 +118,24 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
             id: true,
             endTime: true,
             date: true,
+            submittedAt: true,
             startTime: true,
             createdAt: true,
             updatedAt: true,
+            status: true,
             classAttendees: {
                 skip: !getAllRecord ? page * count : undefined,
                 take: !getAllRecord ? count : undefined,
                 orderBy,
                 where: {
-                    crashCourse: {
-                        code: classAttendeeCrashCourse ? {
-                            contains: classAttendeeCrashCourse,
-                            mode: "insensitive"
-                        } : undefined
-                    },
+                    crashCourseAttendance: classAttendeeCrashCourse ? {
+                        course: {
+                            code: {
+                                contains: classAttendeeCrashCourse,
+                                mode: "insensitive"
+                            }
+                        }
+                    } : undefined,
                     attendanceRegisterStudent: {
                         student: {
                             regno: {
@@ -163,9 +173,13 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
                 },
                 select: {
                     id: true,
-                    crashCourse: {
+                    crashCourseAttendance: {
                         select: {
-                            code: true
+                            course: {
+                                select: {
+                                    code: true
+                                }
+                            }
                         }
                     },
                     attendanceRegisterStudent: {
@@ -230,7 +244,18 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
         return
     }
 
-    let { classAttendees, attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
+    let {
+        classAttendees,
+        attendanceRegister: {
+            course,
+            ...otherAttendanceRegisterData
+        },
+        attendanceRegisterLecturer,
+        date,
+        startTime,
+        endTime,
+        ...otherData
+    } = classAttendance
     let {
         surname,
         otherNames,
@@ -247,7 +272,7 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
         ...otherCourseDate
     } = course
 
-    let normalizeClassAttendees = classAttendees.map(({ id, crashCourse, attendanceRegisterStudent }) => {
+    let normalizeClassAttendees = classAttendees.map(({ id, crashCourseAttendance, attendanceRegisterStudent }) => {
         let {
             regno,
             surname,
@@ -258,7 +283,7 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
             regno,
             status: "PRESENT",
             name: `${surname} ${otherNames}`.toUpperCase(),
-            crashCourse: crashCourse ? crashCourse.code : null
+            crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
         })
     })
 
@@ -306,7 +331,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             ok: false,
             error: {
                 message: "Missing parameter 'studentId'",
-                code: 4027
+                code: 4028
             },
             data: null
         })
@@ -319,7 +344,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             ok: false,
             error: {
                 message: "Missing parameter 'status'",
-                code: 4028
+                code: 4029
             },
             data: null
         })
@@ -332,29 +357,51 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             ok: false,
             error: {
                 message: "Invalid status format",
-                code: 4029
+                code: 4030
             },
             data: null
         })
         return
     }
 
-    let classAttendanceCount = await prismaClient.classAttendance.findUnique({
+    let classAttendancesCount = await prismaClient.classAttendance.findUnique({
         where: {
             id: classAttendanceId
         },
         select: {
-            attendanceRegisterId: true
+            attendanceRegisterId: true,
+            attendanceRegister: {
+                select: {
+                    session: true
+                }
+            },
+            date: true,
+            startTime: true,
+            endTime: true,
+            status: true
         }
     })
 
-    if (!classAttendanceCount) {
+    if (!classAttendancesCount) {
         res.status(400)
         res.json({
             ok: false,
             error: {
                 message: "Class attendance not found",
                 code: 4026
+            },
+            data: null
+        })
+        return
+    }
+
+    if (classAttendancesCount.status == "ONGOING") {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Class attendance is ongoing",
+                code: 4027
             },
             data: null
         })
@@ -380,21 +427,43 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
         return
     }
 
+    if (body.crashCourseId) {
+        let coursesCount = await prismaClient.course.count({
+            where: {
+                id: body.crashCourseId
+            }
+        })
+
+        if (coursesCount <= 0) {
+            res.status(400)
+            res.json({
+                ok: false,
+                error: {
+                    message: "Course not found",
+                    code: 3015
+                },
+                data: null
+            })
+            return
+        }
+    }
+
     if (body.status == "PRESENT") {
         let newAttendanceRegisterStudent = await prismaClient.attendanceRegisterStudent.upsert({
             where: {
                 attendanceRegisterId_studentId: {
-                    attendanceRegisterId: classAttendanceCount.attendanceRegisterId,
+                    attendanceRegisterId: classAttendancesCount.attendanceRegisterId,
                     studentId: body.studentId
                 }
             },
             update: {},
             create: {
-                attendanceRegisterId: classAttendanceCount.attendanceRegisterId,
-                studentId: body.studentId
+                attendanceRegisterId: classAttendancesCount.attendanceRegisterId,
+                studentId: body.studentId,
             },
             select: {
-                id: true
+                id: true,
+                studentId: true
             }
         })
 
@@ -408,13 +477,27 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             update: {},
             create: {
                 attendanceRegisterStudentId: newAttendanceRegisterStudent.id,
-                classAttendanceId: classAttendanceId
+                classAttendanceId: classAttendanceId,
+                crashCourseAttendance: body.crashCourseId ? {
+                    create: {
+                        courseId: body.crashCourseId,
+                        session: classAttendancesCount.attendanceRegister.session,
+                        date: classAttendancesCount.date,
+                        startTime: classAttendancesCount.startTime,
+                        endTime: classAttendancesCount.endTime,
+                        studentId: newAttendanceRegisterStudent.studentId
+                    }
+                } : undefined
             },
             select: {
                 id: true,
-                crashCourse: {
+                crashCourseAttendance: {
                     select: {
-                        code: true
+                        course: {
+                            select: {
+                                code: true
+                            }
+                        }
                     }
                 },
                 classAttendance: {
@@ -510,7 +593,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                     otherNames: studentOtherNames
                 }
             },
-            crashCourse,
+            crashCourseAttendance,
             id: presentClassAttendeeId
         } = classAttendee
 
@@ -531,16 +614,17 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                 ...otherData,
                 classAttendee: {
                     id: presentClassAttendeeId,
+                    status: "PRESENT",
                     regno,
                     name: `${studentSurname} ${studentOtherNames}`.toUpperCase(),
-                    crashCourse: crashCourse ? crashCourse.code : null
+                    crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
                 }
             },
             error: null
         })
         return
     } else if (body.status == "ABSENT") {
-        let classAttendeesQuery = await prismaClient.classAttendee.findMany({
+        let classAttendeeFirstEntry = await prismaClient.classAttendee.findFirst({
             where: {
                 attendanceRegisterStudent: {
                     studentId: body.studentId
@@ -552,16 +636,13 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             }
         })
 
-        let classAttendeesQueryFirstEntry = classAttendeesQuery[0]
-
-
-        if (!classAttendeesQueryFirstEntry) {
+        if (!classAttendeeFirstEntry) {
             res.status(400)
             res.json({
                 ok: false,
                 error: {
                     message: "Class attendee not found",
-                    code: 4030
+                    code: 4031
                 },
                 data: null
             })
@@ -571,15 +652,19 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
         let { classAttendance, ...classAttendee } = await prismaClient.classAttendee.delete({
             where: {
                 classAttendanceId_attendanceRegisterStudentId: {
-                    attendanceRegisterStudentId: classAttendeesQueryFirstEntry.attendanceRegisterStudentId,
+                    attendanceRegisterStudentId: classAttendeeFirstEntry.attendanceRegisterStudentId,
                     classAttendanceId: classAttendanceId
                 }
             },
             select: {
                 id: true,
-                crashCourse: {
+                crashCourseAttendance: {
                     select: {
-                        code: true
+                        course: {
+                            select: {
+                                code: true
+                            }
+                        }
                     }
                 },
                 classAttendance: {
@@ -675,7 +760,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                     otherNames: studentOtherNames
                 }
             },
-            crashCourse,
+            crashCourseAttendance,
             id: presentClassAttendeeId
         } = classAttendee
 
@@ -696,9 +781,10 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                 ...otherData,
                 classAttendee: {
                     id: presentClassAttendeeId,
+                    status: "ABSENT",
                     regno,
                     name: `${studentSurname} ${studentOtherNames}`.toUpperCase(),
-                    crashCourse: crashCourse ? crashCourse.code : null
+                    crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
                 }
             },
             error: null
@@ -711,7 +797,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
         ok: false,
         error: {
             message: "Invalid status format",
-            code: 4029
+            code: 4030
         },
         data: null
     })
@@ -720,19 +806,35 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
 ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanceId"), async (req, res) => {
     let classAttendanceId = req.params.classAttendanceId
 
-    let classAttendanceCount = await prismaClient.classAttendance.count({
+    let classAttendancesCount = await prismaClient.classAttendance.findUnique({
         where: {
             id: classAttendanceId,
+        },
+        select: {
+            status: true
         }
     })
 
-    if (classAttendanceCount <= 0) {
+    if (!classAttendancesCount) {
         res.status(400)
         res.json({
             ok: false,
             error: {
                 message: "Class attendance not found",
                 code: 4026
+            },
+            data: null
+        })
+        return
+    }
+
+    if (classAttendancesCount.status == "ONGOING") {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Class attendance is ongoing",
+                code: 4027
             },
             data: null
         })
@@ -747,9 +849,11 @@ ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanc
             id: true,
             endTime: true,
             date: true,
+            status: true,
             startTime: true,
             createdAt: true,
             updatedAt: true,
+            submittedAt: true,
             attendanceRegister: {
                 select: {
                     session: true,
@@ -823,5 +927,7 @@ ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanc
         error: null
     })
 })
+
+ClassAttendanceIDRoute.use("/", AcceptRoute)
 
 export default ClassAttendanceIDRoute
