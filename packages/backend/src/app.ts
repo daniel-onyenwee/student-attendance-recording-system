@@ -3,7 +3,9 @@ import bodyParser from "body-parser"
 import ProcessRoute from "./routes/process.js"
 import AuthRoute from "./routes/auth/index.js"
 import AdminRoute from "./routes/admin/index.js"
+import LecturerRoute from "./routes/lecturer/index.js"
 import ImageRoute from "./routes/image.js"
+import UserRoute from "./routes/user.js"
 import ReportRoute from "./routes/report.js"
 import * as faceapi from 'face-api.js'
 import { Canvas, Image, ImageData } from "canvas"
@@ -30,9 +32,13 @@ AppRoute.use("/auth", AuthRoute)
 
 AppRoute.use("/admin", AdminRoute)
 
+AppRoute.use("/lecturer", LecturerRoute)
+
 AppRoute.use("/image", ImageRoute)
 
 AppRoute.use("/report", ReportRoute)
+
+AppRoute.use("/user", UserRoute)
 
 AppRoute.get("/", (_, res) => {
     res.redirect("/process")
