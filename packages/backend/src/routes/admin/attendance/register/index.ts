@@ -239,7 +239,10 @@ RegisterRoute.post("/", async (req, res) => {
         return
     }
 
-    if (!body.studentIds) {
+    body.studentIds = body.studentIds || []
+
+    /**
+     * if (!body.studentIds) {
         res.status(400)
         res.json({
             ok: false,
@@ -251,6 +254,7 @@ RegisterRoute.post("/", async (req, res) => {
         })
         return
     }
+     */
 
     let coursesCount = await prismaClient.course.count({
         where: {
