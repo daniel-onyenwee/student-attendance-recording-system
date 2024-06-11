@@ -164,15 +164,14 @@ model Student {
 }
 
 model StudentFace {
-  id         String   @id @default(uuid())
-  studentId  String   @unique @map("student_id")
-  mineType   String   @map("mine_type")
-  image      String
-  descriptor String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  metadata   Json     @default("{}")
+  id        String   @id @default(uuid())
+  studentId String   @unique @map("student_id")
+  mineType  String   @map("mine_type")
+  image     String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  metadata  Json     @default("{}")
 
   @@map("student_faces")
 }
