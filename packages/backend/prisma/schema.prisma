@@ -251,6 +251,9 @@ model ClassLocation {
   classSize         ClassSize       @default(MEDIUM) @map("class_size")
   classShape        ClassShape      @default(SQUARE) @map("class_shape")
   classAttendance   ClassAttendance @relation(fields: [classAttendanceId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  metadata          Json            @default("{}")
 
   @@map("class_locations")
 }
