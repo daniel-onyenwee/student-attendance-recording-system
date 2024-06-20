@@ -4,17 +4,15 @@ import ProcessRoute from "./routes/process.js"
 import AuthRoute from "./routes/auth/index.js"
 import AdminRoute from "./routes/admin/index.js"
 import LecturerRoute from "./routes/lecturer/index.js"
+import StudentRoute from "./routes/student/index.js"
 import ImageRoute from "./routes/image.js"
 import UserRoute from "./routes/user.js"
 import ReportRoute from "./routes/report.js"
-import * as faceapi from 'face-api.js'
-import { Canvas, Image, ImageData } from "canvas"
+import UtilsRoute from "./routes/utils/index.js"
 import fileUpload from "express-fileupload"
 import { onExit } from "signal-exit"
 import { auth, notFound } from "./middleware/index.js"
 import { prismaClient } from "./utils/index.js"
-
-faceapi.env.monkeyPatch({ Canvas, Image, ImageData } as any)
 
 const AppRoute = express()
 
@@ -33,6 +31,10 @@ AppRoute.use("/auth", AuthRoute)
 AppRoute.use("/admin", AdminRoute)
 
 AppRoute.use("/lecturer", LecturerRoute)
+
+AppRoute.use("/student", StudentRoute)
+
+AppRoute.use("/utils", UtilsRoute)
 
 AppRoute.use("/image", ImageRoute)
 
