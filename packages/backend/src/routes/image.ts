@@ -1,14 +1,14 @@
 import express from "express"
 import { prismaClient } from "../utils/index.js"
 import idValidator from "../middleware/id-validator.js"
-import { dirname, join } from "path"
-import { fileURLToPath } from 'url'
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const ImageRoute = express.Router()
 
-ImageRoute.get("/student-:studentId-face", idValidator("studentId"), async (req, res) => {
+ImageRoute.get("/student-face/:studentId", idValidator("studentId"), async (req, res) => {
     let studentId = req.params.studentId
 
     let studentFace = await prismaClient.studentFace.findUnique({
@@ -19,7 +19,7 @@ ImageRoute.get("/student-:studentId-face", idValidator("studentId"), async (req,
 
     if (!studentFace) {
         res.status(400)
-        res.sendFile(join(__dirname, "../../../public/blank-profile.png"))
+        res.sendFile(join(__dirname, "../../public/blank-profile.png"))
         return
     }
 
@@ -29,7 +29,7 @@ ImageRoute.get("/student-:studentId-face", idValidator("studentId"), async (req,
         res.send(Buffer.from(studentFace.image, "base64"))
     } catch (error) {
         res.status(400)
-        res.sendFile(join(__dirname, "../../../public/blank-profile.png"))
+        res.sendFile(join(__dirname, "../../public/blank-profile.png"))
     }
 })
 
