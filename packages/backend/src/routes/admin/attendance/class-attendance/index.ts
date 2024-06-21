@@ -108,7 +108,7 @@ ClassAttendanceRoute.get("/", async (req, res) => {
     let searchBy: ArrangeBy = "createdAt"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["date", "startTime", "endTime", "updatedAt", "createdAt", "lecturerName", "courseTitle", "courseCode", "session", "semester", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
+        searchBy = ["date", "startTime", "endTime", "updatedAt", "createdAt", "lecturerName", "courseTitle", "courseCode", "session", "semester", "department", "faculty", "status", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -533,7 +533,9 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         where: {
             date: body.date,
             attendanceRegisterId: body.attendanceRegisterId,
-            startTime: body.startTime,
+            startTime: {
+                gte: body.startTime
+            },
             endTime: {
                 lte: body.endTime
             }
