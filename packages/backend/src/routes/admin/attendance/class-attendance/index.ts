@@ -1,7 +1,7 @@
 import express from "express"
 import ClassAttendanceIDRoute from "./[classAttendanceId]/index.js"
-import { getCurrentSession, prismaClient } from "../../../../utils/index.js"
-import { $Enums, Prisma } from "@prisma/client"
+import { getCurrentSession } from "../../../../utils/index.js"
+import { $Enums, Prisma, PrismaClient } from "@prisma/client"
 import { subMonths } from "date-fns"
 import { mergeCourseCrashSQL } from "../../../../services/index.js"
 
@@ -60,6 +60,8 @@ type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lectur
 const ClassAttendanceRoute = express.Router()
 
 ClassAttendanceRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let date = url.searchParams.get("date") || String()
     let startTime = url.searchParams.get("startTime") || String()
@@ -359,6 +361,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
 })
 
 ClassAttendanceRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: ClassAttendanceRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

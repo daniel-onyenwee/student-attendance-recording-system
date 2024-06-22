@@ -1,10 +1,10 @@
 import express from "express"
 import { authAccess } from "../../middleware/index.js"
-import { prismaClient } from "../../utils/index.js"
 import { nanoid } from "nanoid"
 import RecordRoute from "./record/index.js"
 import AttendanceRoute from "./attendance/index.js"
 import ReportRoute from "./report/index.js"
+import { PrismaClient } from "@prisma/client"
 
 interface AdminRequestBody {
     username: string
@@ -16,6 +16,8 @@ const AdminRoute = express.Router()
 AdminRoute.use(authAccess("ADMIN"))
 
 AdminRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let admin = await prismaClient.admin.findUnique({
@@ -66,6 +68,8 @@ AdminRoute.get("/", async (req, res) => {
 })
 
 AdminRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: AdminRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {
@@ -169,6 +173,8 @@ AdminRoute.post("/", async (req, res) => {
 })
 
 AdminRoute.patch("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: AdminRequestBody = req.body || {}
     let userId = req.app.get("user-id")
     let updateData: Partial<AdminRequestBody> = {}
@@ -273,6 +279,8 @@ AdminRoute.patch("/", async (req, res) => {
 })
 
 AdminRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     const adminsCount = await prismaClient.admin.count()

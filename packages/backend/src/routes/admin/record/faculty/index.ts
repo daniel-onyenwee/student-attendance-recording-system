@@ -1,6 +1,6 @@
 import express from "express"
-import { prismaClient } from "../../../../utils/index.js"
 import FacultyIDRoute from "./[facultyId].js"
+import { PrismaClient } from "@prisma/client"
 
 type ArrangeBy = "name" | "updatedAt" | "createdAt"
 
@@ -15,6 +15,8 @@ interface FacultyRequestBody {
 const FacultyRoute = express.Router()
 
 FacultyRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let name = url.searchParams.get("name") || String()
 
@@ -70,6 +72,8 @@ FacultyRoute.get("/", async (req, res) => {
 })
 
 FacultyRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: FacultyRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

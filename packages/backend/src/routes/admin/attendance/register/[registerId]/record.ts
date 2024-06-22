@@ -1,7 +1,6 @@
 import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
-import { prismaClient } from "../../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 type BasicArrangeBy = "name" | "gender" | "updatedAt" | "createdAt" | "department" | "faculty"
 
@@ -56,6 +55,8 @@ type QueryOrderByObject<T extends "Lecturer" | "Student" = "Lecturer"> = (T exte
 const RegisterIDRecordRoute = express.Router()
 
 RegisterIDRecordRoute.get("/:registerId/lecturer", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let registerId = req.params.registerId
 
     let attendanceRegistersCount = await prismaClient.attendanceRegister.count({
@@ -239,6 +240,8 @@ RegisterIDRecordRoute.get("/:registerId/lecturer", idValidator("registerId"), as
 })
 
 RegisterIDRecordRoute.get("/:registerId/student", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let registerId = req.params.registerId
 
     let attendanceRegistersCount = await prismaClient.attendanceRegister.count({

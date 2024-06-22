@@ -1,13 +1,15 @@
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import "dotenv/config"
-import { prismaClient } from "../utils/index.js"
+import { PrismaClient } from "@prisma/client"
 
 /**
  * Prevent unauthenticated access to the system.
  */
 export default function auth() {
     return async function (req: Request, res: Response, next: NextFunction) {
+        const prismaClient: PrismaClient = req.app.get("prisma-client")
+
         let url = new URL(req.url || String(), `http://${req.headers.host}`)
         let unauthorizedRoutes = ["/", "/process", "/auth/login", "/report"]
 

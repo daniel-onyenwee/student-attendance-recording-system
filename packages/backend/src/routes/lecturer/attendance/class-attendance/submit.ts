@@ -1,6 +1,5 @@
 import express from "express"
-import { prismaClient } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 interface SubmitRequestBody {
     endTime?: string
@@ -10,6 +9,8 @@ interface SubmitRequestBody {
 const SubmitRoute = express.Router()
 
 SubmitRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
     let body: SubmitRequestBody = req.body || {}
 

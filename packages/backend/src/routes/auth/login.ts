@@ -1,7 +1,7 @@
 import express from "express"
 import "dotenv/config"
 import jwt from "jsonwebtoken"
-import { prismaClient } from "../../utils/index.js"
+import { PrismaClient } from "@prisma/client"
 
 interface LoginRequestBody {
     type: "LECTURER" | "ADMIN" | "STUDENT"
@@ -20,6 +20,8 @@ interface AuthData {
 const LoginRoute = express.Router()
 
 LoginRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: LoginRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

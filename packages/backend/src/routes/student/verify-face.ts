@@ -1,9 +1,12 @@
 import express from "express"
-import { FaceRecognitionAPI, prismaClient } from "../../utils/index.js"
+import { FaceRecognitionAPI } from "../../utils/index.js"
+import { PrismaClient } from "@prisma/client"
 
 const VerifyFaceRoute = express.Router()
 
 VerifyFaceRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let files = req.files

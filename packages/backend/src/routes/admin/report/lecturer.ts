@@ -1,12 +1,14 @@
 import express from "express"
 import { idValidator } from "../../../middleware/index.js"
-import { prismaClient } from "../../../utils/index.js"
 import jwt from "jsonwebtoken"
 import "dotenv/config"
+import { PrismaClient } from "@prisma/client"
 
 const LecturerRoute = express.Router()
 
 LecturerRoute.get("/:lecturerId/:session", idValidator("lecturerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.params.lecturerId
     let session = req.params.session
 

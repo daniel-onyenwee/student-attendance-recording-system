@@ -1,7 +1,7 @@
 import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
-import { prismaClient } from "../../../../../utils/index.js"
 import AcceptRoute from "./accept.js"
+import { PrismaClient } from "@prisma/client"
 
 interface ClassAttendeeSurnameQueryOrderByObject {
     attendanceRegisterStudent: {
@@ -45,6 +45,8 @@ interface ClassAttendanceIDRouteRequestBody {
 const ClassAttendanceIDRoute = express.Router()
 
 ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let classAttendanceId = req.params.classAttendanceId
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let classAttendeeName = url.searchParams.get("classAttendeeName") || String()
@@ -309,6 +311,8 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
 })
 
 ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendanceId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let classAttendanceId = req.params.classAttendanceId
     let body: ClassAttendanceIDRouteRequestBody | null = req.body || {}
 
@@ -804,6 +808,8 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
 })
 
 ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanceId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let classAttendanceId = req.params.classAttendanceId
 
     let classAttendancesCount = await prismaClient.classAttendance.findUnique({

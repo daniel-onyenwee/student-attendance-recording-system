@@ -1,12 +1,13 @@
 import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
-import { prismaClient } from "../../../../../utils/index.js"
-import { $Enums, Prisma } from "@prisma/client"
+import { $Enums, Prisma, PrismaClient } from "@prisma/client"
 import { mergeCourseCrashSQL } from "../../../../../services/index.js"
 
 const AcceptRoute = express.Router()
 
 AcceptRoute.post("/:classAttendanceId/accept", idValidator("classAttendanceId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let classAttendanceId = req.params.classAttendanceId
 
     let classAttendancesCount = await prismaClient.classAttendance.findUnique({

@@ -1,6 +1,6 @@
 import express from "express"
-import { prismaClient } from "../../../../utils/index.js"
 import { idValidator } from "../../../../middleware/index.js"
+import { PrismaClient } from "@prisma/client"
 
 interface FacultyIDRequestBody {
     name: string
@@ -9,6 +9,8 @@ interface FacultyIDRequestBody {
 const FacultyIDRoute = express.Router()
 
 FacultyIDRoute.get("/:facultyId", idValidator("facultyId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let facultyId = req.params.facultyId
 
     let faculty = await prismaClient.faculty.findUnique({
@@ -45,6 +47,8 @@ FacultyIDRoute.get("/:facultyId", idValidator("facultyId"), async (req, res) => 
 })
 
 FacultyIDRoute.patch("/:facultyId", idValidator("facultyId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let facultyId = req.params.facultyId
     let body: FacultyIDRequestBody = req.body || {}
     body.name = body.name || String()
@@ -125,6 +129,8 @@ FacultyIDRoute.patch("/:facultyId", idValidator("facultyId"), async (req, res) =
 })
 
 FacultyIDRoute.delete("/:facultyId", idValidator("facultyId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let facultyId = req.params.facultyId
 
     let facultiesCount = await prismaClient.faculty.count({

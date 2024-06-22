@@ -1,8 +1,8 @@
 import express from "express"
 import { authAccess } from "../../middleware/index.js"
-import { prismaClient } from "../../utils/index.js"
 import ClassAttendanceRoute from "./class-attendance/index.js"
 import VerifyFaceRoute from "./verify-face.js"
+import { PrismaClient } from "@prisma/client"
 
 interface StudentRequestBody {
     password?: string
@@ -13,6 +13,8 @@ const StudentRoute = express.Router()
 StudentRoute.use(authAccess("STUDENT"))
 
 StudentRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let student = await prismaClient.student.findUnique({
@@ -96,6 +98,8 @@ StudentRoute.get("/", async (req, res) => {
 })
 
 StudentRoute.patch("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let studentsCount = await prismaClient.student.count({

@@ -1,7 +1,7 @@
 import express from "express"
 import { authAccess } from "../../middleware/index.js"
-import { prismaClient } from "../../utils/index.js"
 import AttendanceRoute from "./attendance/index.js"
+import { PrismaClient } from "@prisma/client"
 
 const LecturerRoute = express.Router()
 
@@ -13,6 +13,8 @@ interface LecturerRequestBody {
 LecturerRoute.use(authAccess("LECTURER"))
 
 LecturerRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let lecturer = await prismaClient.lecturer.findUnique({
@@ -88,6 +90,8 @@ LecturerRoute.get("/", async (req, res) => {
 })
 
 LecturerRoute.patch("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let lecturersCount = await prismaClient.lecturer.count({

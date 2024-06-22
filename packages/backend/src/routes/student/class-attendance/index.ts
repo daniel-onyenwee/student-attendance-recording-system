@@ -1,8 +1,8 @@
 import express from "express"
 import SignInRoute from "./signin.js"
 import SignOutRoute from "./signout.js"
-import { getCurrentSession, isStudentInsideClassroom, prismaClient } from "../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { getCurrentSession, isStudentInsideClassroom } from "../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 import SignedRoute from "./signed.js"
 
 type CourseArrangeBy = "courseTitle" | "courseCode" | "session" | "semester" | "department" | "faculty" | "level"
@@ -48,6 +48,8 @@ type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lectur
 const ClassAttendanceRoute = express.Router()
 
 ClassAttendanceRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
 
     let currentTimestamp = url.searchParams.get("currentTimestamp") || null

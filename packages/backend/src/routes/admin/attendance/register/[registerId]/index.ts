@@ -2,10 +2,10 @@ import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
 import {
     attendanceRegisterDecisionExpressionTypeChecker,
-    attendanceRegisterStudentDecisionDeterminer,
-    prismaClient
+    attendanceRegisterStudentDecisionDeterminer
 } from "../../../../../utils/index.js"
 import RegisterIDRecordRoute from "./record.js"
+import { PrismaClient } from "@prisma/client"
 
 interface RegisterIDRequestBody {
     courseId: string
@@ -40,6 +40,8 @@ type QueryOrderByObject = {
 const RegisterIDRoute = express.Router()
 
 RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let registerId = req.params.registerId
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let classAttendeeName = url.searchParams.get("classAttendeeName") || String()
@@ -341,6 +343,8 @@ RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) 
 })
 
 RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let registerId = req.params.registerId
 
     let attendanceRegistersCount = await prismaClient.attendanceRegister.findUnique({
@@ -589,6 +593,8 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
 })
 
 RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let registerId = req.params.registerId
 
     let attendanceRegistersCount = await prismaClient.attendanceRegister.count({

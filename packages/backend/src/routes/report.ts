@@ -3,7 +3,8 @@ import jwt, { JwtPayload } from "jsonwebtoken"
 import "dotenv/config"
 import { format } from "date-fns"
 import { PassThrough } from "node:stream"
-import { attendanceRegisterStudentDecisionDeterminer, createExcelFile, prismaClient } from "../utils/index.js"
+import { attendanceRegisterStudentDecisionDeterminer, createExcelFile } from "../utils/index.js"
+import { PrismaClient } from "@prisma/client"
 
 interface ReportData {
     fileName: string
@@ -13,6 +14,8 @@ interface ReportData {
 const ReportRoute = express.Router()
 
 ReportRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let accessToken = url.searchParams.get("access_token") || String()
 
@@ -24,11 +27,11 @@ ReportRoute.get("/", async (req, res) => {
         let generatedReport: ReportData | null = null
 
         if (recordType == "COURSE") {
-            generatedReport = await generateCourseReport(recordData.courseId, recordData.session)
+            generatedReport = await generateCourseReport(prismaClient, recordData.courseId, recordData.session)
         } else if (recordType == "LECTURER") {
-            generatedReport = await generateLecturerReport(recordData.lecturerId, recordData.session)
+            generatedReport = await generateLecturerReport(prismaClient, recordData.lecturerId, recordData.session)
         } else if (recordType == "STUDENT") {
-            generatedReport = await generateStudentReport(recordData.studentId, recordData.session)
+            generatedReport = await generateStudentReport(prismaClient, recordData.studentId, recordData.session)
         }
 
         if (generatedReport) {
@@ -47,7 +50,7 @@ ReportRoute.get("/", async (req, res) => {
     }
 })
 
-async function generateStudentReport(studentId: string, session: string): Promise<ReportData | null> {
+async function generateStudentReport(prismaClient: PrismaClient, studentId: string, session: string): Promise<ReportData | null> {
     const student = await prismaClient.student.findUnique({
         where: {
             id: studentId
@@ -131,7 +134,7 @@ async function generateStudentReport(studentId: string, session: string): Promis
     }
 }
 
-async function generateLecturerReport(lecturerId: string, session: string): Promise<ReportData | null> {
+async function generateLecturerReport(prismaClient: PrismaClient, lecturerId: string, session: string): Promise<ReportData | null> {
     const lecturer = await prismaClient.lecturer.findUnique({
         where: {
             id: lecturerId
@@ -211,7 +214,7 @@ async function generateLecturerReport(lecturerId: string, session: string): Prom
     }
 }
 
-async function generateCourseReport(courseId: string, session: string): Promise<ReportData | null> {
+async function generateCourseReport(prismaClient: PrismaClient, courseId: string, session: string): Promise<ReportData | null> {
     let attendanceRegisterQuery = await prismaClient.attendanceRegister.findUnique({
         where: {
             courseId_session: {
