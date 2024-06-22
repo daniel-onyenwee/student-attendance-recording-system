@@ -1,9 +1,7 @@
 import { $Enums } from "@prisma/client"
 import express from "express"
-import { Image } from "canvas"
-import * as faceapi from "face-api.js"
 import { idValidator } from "../../../../middleware/index.js"
-import { faceDetectionOptions, prismaClient } from "../../../../utils/index.js"
+import { FaceRecognitionAPI, prismaClient } from "../../../../utils/index.js"
 
 interface StudentIDRequestBody {
     surname: string
@@ -78,7 +76,7 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
         }
     } = student
 
-    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+    let faceImage = new URL(`/image/student-face/${studentId}`, `http://${req.headers.host}`)
 
     res.status(200)
     res.json({
@@ -137,12 +135,26 @@ StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (r
         faceImageFile = faceImageFile[0]
     }
 
-    const faceImage = new Image()
-    faceImage.src = faceImageFile.data
+    if (!faceImageFile) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Missing parameter 'faceImage'",
+                code: 3024
+            },
+            data: null
+        })
+        return
+    }
 
-    const detections = await faceapi.detectAllFaces(faceImage as any, faceDetectionOptions)
+    let faceImageBase64Data = faceImageFile.data.toString("base64")
 
-    if (detections.length <= 0) {
+    let faceDetectionResult = await FaceRecognitionAPI.detectFace(faceImageBase64Data)
+
+    const faceDetectedCount = faceDetectionResult.data ? faceDetectionResult.data.face_count : 0
+
+    if (faceDetectedCount < 1) {
         res.status(400)
         res.json({
             ok: false,
@@ -155,12 +167,12 @@ StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (r
         return
     }
 
-    if (detections.length > 1) {
+    if (faceDetectedCount > 1) {
         res.status(400)
         res.json({
             ok: false,
             error: {
-                message: "Many faces detected",
+                message: "More than 1 faces detected",
                 code: 3026
             },
             data: null
@@ -173,17 +185,17 @@ StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (r
             studentId,
         },
         update: {
-            image: faceImageFile.data.toString("base64"),
+            image: faceImageBase64Data,
             mineType: faceImageFile.mimetype
         },
         create: {
             studentId,
-            image: faceImageFile.data.toString("base64"),
+            image: faceImageBase64Data,
             mineType: faceImageFile.mimetype
         }
     })
 
-    let faceImageUrl = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+    let faceImageUrl = new URL(`/image/student-face/${studentId}`, `http://${req.headers.host}`)
     res.status(200)
     res.json({
         ok: true,
@@ -382,7 +394,7 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
         }
     } = student
 
-    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+    let faceImage = new URL(`/image/student-face/${studentId}`, `http://${req.headers.host}`)
 
     res.status(200)
     res.json({
@@ -475,7 +487,7 @@ StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) 
         }
     } = studentData
 
-    let faceImage = new URL(`/image/student-${studentId}-face`, `http://${req.headers.host}`)
+    let faceImage = new URL(`/image/student-face/${studentId}`, `http://${req.headers.host}`)
 
     res.status(200)
     res.json({

@@ -571,7 +571,9 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         where: {
             date: body.date,
             attendanceRegisterId: body.attendanceRegisterId,
-            startTime: body.startTime,
+            startTime: {
+                gte: body.startTime
+            },
             endTime: {
                 lte: body.endTime
             }

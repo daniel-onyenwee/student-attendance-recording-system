@@ -6,8 +6,8 @@ import AttendanceRoute from "./attendance/index.js"
 const LecturerRoute = express.Router()
 
 interface LecturerRequestBody {
-    username: string
-    password: string
+    username?: string
+    password?: string
 }
 
 LecturerRoute.use(authAccess("LECTURER"))

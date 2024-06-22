@@ -187,7 +187,7 @@ StudentRoute.get("/", async (req, res) => {
     })
 
     let student = studentsQuery.map(({ department: { name: departmentName, faculty: { name: facultyName } }, surname, otherNames, ...otherData }) => {
-        let faceImage = new URL(`/image/student-${otherData.id}-face`, `http://${req.headers.host}`)
+        let faceImage = new URL(`/image/student-face/${otherData.id}`, `http://${req.headers.host}`)
         return ({
             name: `${surname} ${otherNames}`.toUpperCase(),
             ...otherData,
@@ -417,7 +417,7 @@ StudentRoute.post("/", async (req, res) => {
         }
     } = studentData
 
-    let faceImage = new URL(`/image/student-${id}-face`, `http://${req.headers.host}`)
+    let faceImage = new URL(`/image/student-face/${id}`, `http://${req.headers.host}`)
 
     res.status(200)
     res.json({
