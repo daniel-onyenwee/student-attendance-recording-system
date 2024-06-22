@@ -1,6 +1,5 @@
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 import express from "express"
-import { prismaClient } from "../../../../utils/index.js"
 import { idValidator } from "../../../../middleware/index.js"
 
 interface DepartmentIDRequestBody {
@@ -12,6 +11,8 @@ interface DepartmentIDRequestBody {
 const DepartmentIDRoute = express.Router()
 
 DepartmentIDRoute.get("/:departmentId", idValidator("departmentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let departmentId = req.params.departmentId
 
     let department = await prismaClient.department.findUnique({
@@ -63,6 +64,8 @@ DepartmentIDRoute.get("/:departmentId", idValidator("departmentId"), async (req,
 })
 
 DepartmentIDRoute.patch("/:departmentId", idValidator("departmentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let departmentId = req.params.departmentId
 
     let departmentCount = await prismaClient.department.count({
@@ -189,6 +192,8 @@ DepartmentIDRoute.patch("/:departmentId", idValidator("departmentId"), async (re
 })
 
 DepartmentIDRoute.delete("/:departmentId", idValidator("departmentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let departmentId = req.params.departmentId
 
     let departmentsCount = await prismaClient.department.count({

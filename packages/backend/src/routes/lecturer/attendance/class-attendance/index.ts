@@ -1,7 +1,6 @@
 import express from "express"
-import { prismaClient } from "../../../../utils/index.js"
 import SubmitRoute from "./submit.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 interface ClassAttendancePostRequestBody {
     attendanceRegisterId: string
@@ -54,6 +53,8 @@ type ArrangeOrder = "asc" | "desc"
 const ClassAttendanceRoute = express.Router()
 
 ClassAttendanceRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
@@ -309,6 +310,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
 })
 
 ClassAttendanceRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
     let body: ClassAttendancePostRequestBody | null = req.body
 
@@ -703,6 +706,8 @@ ClassAttendanceRoute.post("/", async (req, res) => {
 })
 
 ClassAttendanceRoute.patch("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
     let body: ClassAttendancePatchRequestBody | null = req.body
 
@@ -1189,6 +1194,8 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
 })
 
 ClassAttendanceRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
 
     let classAttendancesCount = await prismaClient.classAttendance.findFirst({

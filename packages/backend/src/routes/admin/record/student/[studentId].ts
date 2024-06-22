@@ -1,7 +1,7 @@
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 import express from "express"
 import { idValidator } from "../../../../middleware/index.js"
-import { FaceRecognitionAPI, prismaClient } from "../../../../utils/index.js"
+import { FaceRecognitionAPI } from "../../../../utils/index.js"
 
 interface StudentIDRequestBody {
     surname: string
@@ -16,6 +16,8 @@ interface StudentIDRequestBody {
 const StudentIDRoute = express.Router()
 
 StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let studentId = req.params.studentId
 
     let student = await prismaClient.student.findUnique({
@@ -100,6 +102,8 @@ StudentIDRoute.get("/:studentId", idValidator("studentId"), async (req, res) => 
 
 // Set a minimum size of the image to upload
 StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let studentId = req.params.studentId
     let files = req.files
 
@@ -207,6 +211,8 @@ StudentIDRoute.post("/:studentId/face-image", idValidator("studentId"), async (r
 })
 
 StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let studentId = req.params.studentId
 
     let studentsCount = await prismaClient.student.findUnique({
@@ -417,6 +423,8 @@ StudentIDRoute.patch("/:studentId", idValidator("studentId"), async (req, res) =
 })
 
 StudentIDRoute.delete("/:studentId", idValidator("studentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let studentId = req.params.studentId
 
     let studentsCount = await prismaClient.student.count({

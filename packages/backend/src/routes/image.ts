@@ -1,14 +1,16 @@
 import express from "express"
-import { prismaClient } from "../utils/index.js"
 import idValidator from "../middleware/id-validator.js"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { PrismaClient } from "@prisma/client"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const ImageRoute = express.Router()
 
 ImageRoute.get("/student-face/:studentId", idValidator("studentId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let studentId = req.params.studentId
 
     let studentFace = await prismaClient.studentFace.findUnique({

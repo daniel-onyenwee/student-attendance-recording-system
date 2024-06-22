@@ -1,6 +1,6 @@
 import express from "express"
-import { getCurrentSession, prismaClient } from "../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { getCurrentSession } from "../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 type ArrangeBy = "title" | "code" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
 
@@ -18,6 +18,8 @@ type QueryOrderByObject = Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "departm
 const RegisterRoute = express.Router()
 
 RegisterRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.app.get("user-id")
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)

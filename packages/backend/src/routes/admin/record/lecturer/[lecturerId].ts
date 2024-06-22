@@ -1,7 +1,6 @@
 import express from "express"
 import { idValidator } from "../../../../middleware/index.js"
-import { prismaClient } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 interface LecturerIDRequestBody {
     surname: string
@@ -15,6 +14,8 @@ interface LecturerIDRequestBody {
 const LecturerIDRoute = express.Router()
 
 LecturerIDRoute.get("/:lecturerId", idValidator("lecturerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.params.lecturerId
 
     let lecturer = await prismaClient.lecturer.findUnique({
@@ -77,6 +78,8 @@ LecturerIDRoute.get("/:lecturerId", idValidator("lecturerId"), async (req, res) 
 })
 
 LecturerIDRoute.patch("/:lecturerId", idValidator("lecturerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.params.lecturerId
 
     let lecturersCount = await prismaClient.lecturer.count({
@@ -229,6 +232,8 @@ LecturerIDRoute.patch("/:lecturerId", idValidator("lecturerId"), async (req, res
 })
 
 LecturerIDRoute.delete("/:lecturerId", idValidator("lecturerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let lecturerId = req.params.lecturerId
 
     let lecturersCount = await prismaClient.lecturer.count({

@@ -1,7 +1,7 @@
 import express from "express"
 import CourseIDRoute from "./[courseId].js"
-import { prismaClient, removeSpecialChar } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { removeSpecialChar } from "../../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 type ArrangeBy = "title" | "code" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
 
@@ -27,6 +27,8 @@ interface CourseRequestBody {
 const CourseRoute = express.Router()
 
 CourseRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let department = url.searchParams.get("department") || String()
     let faculty = url.searchParams.get("faculty") || String()
@@ -154,6 +156,8 @@ CourseRoute.get("/", async (req, res) => {
 })
 
 CourseRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: CourseRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

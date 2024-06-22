@@ -1,6 +1,6 @@
 import express from "express"
-import { isStudentInsideClassroom, prismaClient } from "../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { isStudentInsideClassroom } from "../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 interface StudentRequestBody {
     classAttendanceId: string
@@ -13,6 +13,8 @@ interface StudentRequestBody {
 const SignInRoute = express.Router()
 
 SignInRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
     let body: StudentRequestBody | null = req.body
 

@@ -1,6 +1,6 @@
 import express from "express"
-import { attendanceRegisterDecisionExpressionTypeChecker, getCurrentSession, prismaClient } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { attendanceRegisterDecisionExpressionTypeChecker, getCurrentSession } from "../../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 import RegisterIDRoute from "./[registerId]/index.js"
 
 type ArrangeBy = "title" | "code" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
@@ -27,6 +27,8 @@ interface RegisterRequestBody {
 const RegisterRoute = express.Router()
 
 RegisterRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let department = url.searchParams.get("department") || String()
     let faculty = url.searchParams.get("faculty") || String()
@@ -172,6 +174,8 @@ RegisterRoute.get("/", async (req, res) => {
 })
 
 RegisterRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: RegisterRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

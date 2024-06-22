@@ -1,7 +1,6 @@
 import express from "express"
 import DepartmentIDRoute from "./[departmentId].js"
-import { prismaClient } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 type ArrangeBy = "name" | "updatedAt" | "createdAt" | "faculty"
 
@@ -22,6 +21,8 @@ interface DepartmentRequestBody {
 const DepartmentRoute = express.Router()
 
 DepartmentRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let name = url.searchParams.get("name") || String()
     let faculty = url.searchParams.get("faculty") || String()
@@ -103,6 +104,8 @@ DepartmentRoute.get("/", async (req, res) => {
 })
 
 DepartmentRoute.post("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let body: DepartmentRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {

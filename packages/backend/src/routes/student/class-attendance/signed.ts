@@ -1,10 +1,11 @@
 import express from "express"
-import { prismaClient } from "../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 const SignedRoute = express.Router()
 
 SignedRoute.get("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let userId = req.app.get("user-id")
 
     let classAttendee = await prismaClient.classAttendee.findFirst({

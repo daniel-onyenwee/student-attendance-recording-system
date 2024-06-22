@@ -1,7 +1,7 @@
 import express from "express"
 import { idValidator } from "../../../../middleware/index.js"
-import { prismaClient, removeSpecialChar } from "../../../../utils/index.js"
-import { $Enums } from "@prisma/client"
+import { removeSpecialChar } from "../../../../utils/index.js"
+import { $Enums, PrismaClient } from "@prisma/client"
 
 interface CourseIDRequestBody {
     title: string
@@ -14,6 +14,8 @@ interface CourseIDRequestBody {
 const CourseIDRoute = express.Router()
 
 CourseIDRoute.get("/:courseId", idValidator("courseId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let courseId = req.params.courseId
 
     let course = await prismaClient.course.findUnique({
@@ -74,6 +76,8 @@ CourseIDRoute.get("/:courseId", idValidator("courseId"), async (req, res) => {
 })
 
 CourseIDRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let courseId = req.params.courseId
 
     let coursesCount = await prismaClient.course.findUnique({
@@ -267,6 +271,8 @@ CourseIDRoute.patch("/:courseId", idValidator("courseId"), async (req, res) => {
 })
 
 CourseIDRoute.delete("/:courseId", idValidator("courseId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
     let courseId = req.params.courseId
 
     let coursesCount = await prismaClient.course.count({
