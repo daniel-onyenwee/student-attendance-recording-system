@@ -10,9 +10,8 @@ import UserRoute from "./routes/user.js"
 import ReportRoute from "./routes/report.js"
 import UtilsRoute from "./routes/utils/index.js"
 import fileUpload from "express-fileupload"
-import { onExit } from "signal-exit"
-import { auth, notFound } from "./middleware/index.js"
-import { prismaClient } from "./utils/index.js"
+
+import { auth, logger, notFound } from "./middleware/index.js"
 
 const AppRoute = express()
 
@@ -23,6 +22,8 @@ AppRoute.use(bodyParser.urlencoded({ extended: true }))
 AppRoute.use(auth())
 
 AppRoute.use(fileUpload())
+
+AppRoute.use(logger())
 
 AppRoute.use("/process", ProcessRoute)
 
@@ -47,9 +48,5 @@ AppRoute.get("/", (_, res) => {
 })
 
 AppRoute.use(notFound())
-
-onExit(() => {
-    prismaClient.$disconnect()
-})
 
 export default AppRoute
