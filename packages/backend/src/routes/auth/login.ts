@@ -2,6 +2,8 @@ import express from "express"
 import "dotenv/config"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
+import { addDays, subHours } from "date-fns"
+
 
 interface LoginRequestBody {
     type: "LECTURER" | "ADMIN" | "STUDENT"
@@ -159,7 +161,12 @@ LoginRoute.post("/", async (req, res) => {
     }
 
     const { id, user: { refreshToken } } = authData
-
+    /**
+         * 1 hour is subtract from expire date to ensure 
+         * the client request for a new access token before
+         * it current access token expire
+         */
+    let expiresIn = subHours(addDays(new Date(), 1), 1).getTime()
     const accessToken = jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET || "secret", { expiresIn: "1d" })
 
     res.status(200)
@@ -167,7 +174,8 @@ LoginRoute.post("/", async (req, res) => {
         ok: true,
         data: {
             refreshToken,
-            accessToken
+            accessToken,
+            expiresIn
         },
         error: null
     })
