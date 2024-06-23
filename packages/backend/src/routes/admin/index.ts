@@ -4,6 +4,7 @@ import { nanoid } from "nanoid"
 import RecordRoute from "./record/index.js"
 import AttendanceRoute from "./attendance/index.js"
 import ReportRoute from "./report/index.js"
+import StatsRoute from "./stats/index.js"
 import { PrismaClient } from "@prisma/client"
 
 interface AdminRequestBody {
@@ -331,5 +332,7 @@ AdminRoute.use("/record", RecordRoute)
 AdminRoute.use("/attendance", AttendanceRoute)
 
 AdminRoute.use("/report", ReportRoute)
+
+AdminRoute.use("/stats", StatsRoute)
 
 export default AdminRoute
