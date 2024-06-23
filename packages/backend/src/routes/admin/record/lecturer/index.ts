@@ -379,6 +379,29 @@ LecturerRoute.post("/", async (req, res) => {
     })
 })
 
+LecturerRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { lecturersId: string[] } = req.body || {}
+
+    body.lecturersId = body.lecturersId || []
+
+    await prismaClient.lecturer.deleteMany({
+        where: {
+            id: {
+                in: body.lecturersId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 LecturerRoute.use("/", LecturerIDRoute)
 
 export default LecturerRoute

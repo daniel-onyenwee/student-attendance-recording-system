@@ -151,6 +151,29 @@ FacultyRoute.post("/", async (req, res) => {
     })
 })
 
+FacultyRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { facultiesId: string[] } = req.body || {}
+
+    body.facultiesId = body.facultiesId || []
+
+    await prismaClient.faculty.deleteMany({
+        where: {
+            id: {
+                in: body.facultiesId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 FacultyRoute.use("/", FacultyIDRoute)
 
 export default FacultyRoute
