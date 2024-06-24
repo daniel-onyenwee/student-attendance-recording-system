@@ -3,6 +3,7 @@ import { idValidator } from "../../../../../middleware/index.js"
 import AcceptRoute from "./accept.js"
 import { PrismaClient } from "@prisma/client"
 import ClassAttendeeRoute from "./class-attendee.js"
+import { differenceInHours } from "date-fns"
 
 interface ClassAttendanceIDRequestBody {
     attendanceRegisterId: string
@@ -275,6 +276,19 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
     }
 
     if (body.date || body.endTime || body.startTime) {
+        if (differenceInHours(body.endTime || classAttendancesCount.endTime, body.startTime || classAttendancesCount.startTime) > 2) {
+            res.status(400)
+            res.json({
+                ok: false,
+                error: {
+                    message: "Class exceeds two hour",
+                    code: 4033
+                },
+                data: null
+            })
+            return
+        }
+
         // Check if a class attendance with same property already exist
         const classAttendanceCountByAttendanceRegisterIdAttendanceRegisterLecturerIdDate = await prismaClient.classAttendance.count({
             where: {

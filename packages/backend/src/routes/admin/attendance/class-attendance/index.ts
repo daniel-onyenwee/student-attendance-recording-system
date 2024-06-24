@@ -2,7 +2,7 @@ import express from "express"
 import ClassAttendanceIDRoute from "./[classAttendanceId]/index.js"
 import { getCurrentSession } from "../../../../utils/index.js"
 import { $Enums, Prisma, PrismaClient } from "@prisma/client"
-import { subMonths } from "date-fns"
+import { subMonths, differenceInHours } from "date-fns"
 import { mergeCourseCrashSQL } from "../../../../services/index.js"
 
 interface ClassAttendanceRequestBody {
@@ -481,6 +481,19 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             error: {
                 message: "Invalid endTime format",
                 code: 4023
+            },
+            data: null
+        })
+        return
+    }
+
+    if (differenceInHours(body.endTime, body.startTime) > 2) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Class exceeds two hour",
+                code: 4033
             },
             data: null
         })
