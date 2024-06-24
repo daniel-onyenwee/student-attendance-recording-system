@@ -1,19 +1,18 @@
 import AppRoute from "./app.js"
 import { PrismaClient } from "@prisma/client"
 
-const defaultLogger = (method: string, route: string) => {
-    console.log(`Visited [${method.toUpperCase()}] - ${route}`)
-}
-
-export default function initializeApp(databaseUrl: string, logger?: (method: string, route: string) => void, port: number = 8080) {
+export default function initializeApp(databaseUrl: string, logger?: (type: "START" | "ROUTE" | "CLOSE", message: { [key: string]: any }) => void, port: number = 8080) {
     AppRoute.set("prisma-client", new PrismaClient({ datasourceUrl: databaseUrl }))
-    AppRoute.set("logger", logger)
 
-    AppRoute.listen(port, () => console.log(`Starting server at http://localhost:${port}`))
-}
+    const routeLogger = (method: string, path: string) => {
+        logger ? logger("ROUTE", { method, path }) : void 0
+    }
 
-export {
-    defaultLogger as logger
+    AppRoute.set("logger", routeLogger)
+
+    AppRoute.listen(port, () => {
+        logger ? logger("START", { port }) : void 0
+    })
 }
 
 initializeApp("postgresql://postgres:password@localhost:5432/sar_db?schema=public")
