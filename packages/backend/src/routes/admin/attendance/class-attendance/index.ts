@@ -815,6 +815,29 @@ ClassAttendanceRoute.post("/", async (req, res) => {
     })
 })
 
+ClassAttendanceRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { classAttendancesId: string[] } = req.body || {}
+
+    body.classAttendancesId = body.classAttendancesId || []
+
+    await prismaClient.classAttendance.deleteMany({
+        where: {
+            id: {
+                in: body.classAttendancesId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 ClassAttendanceRoute.use("/", ClassAttendanceIDRoute)
 
 export default ClassAttendanceRoute
