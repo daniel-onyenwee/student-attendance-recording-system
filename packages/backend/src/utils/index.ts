@@ -7,3 +7,4 @@ export {
 } from "./attendance-register/index.js"
 export { default as isStudentInsideClassroom } from "./is-student-inside-classroom.js"
 export { default as FaceRecognitionAPI } from "./face-recognition/index.js"
+export { default as differenceInTimePeriods } from "./difference-in-time-periods.js"
