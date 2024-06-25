@@ -15,4 +15,8 @@ export default function initializeApp(databaseUrl: string, logger?: (type: "STAR
     })
 }
 
-initializeApp("postgresql://postgres:password@localhost:5432/sar_db?schema=public")
+initializeApp("postgresql://postgres:password@localhost:5432/sar_db?schema=public", (type, message) => {
+    if (type == "START") {
+        console.log(`Starting at http://localhost:${message.port}`)
+    }
+})
