@@ -14,7 +14,7 @@ interface AdminRequestBody {
 
 const AdminRoute = express.Router()
 
-AdminRoute.use(authAccess("ADMIN"))
+AdminRoute.use(authAccess("ADMIN", [/^(\/report\/(student|course|lecturer)\/download)/]))
 
 AdminRoute.get("/", async (req, res) => {
     const prismaClient: PrismaClient = req.app.get("prisma-client")
