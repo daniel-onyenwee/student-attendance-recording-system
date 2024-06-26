@@ -239,6 +239,51 @@ RegisterIDRecordRoute.get("/:registerId/lecturer", idValidator("registerId"), as
     })
 })
 
+RegisterIDRecordRoute.delete("/:registerId/lecturer", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let registerId = req.params.registerId
+
+    let attendanceRegistersCount = await prismaClient.attendanceRegister.count({
+        where: {
+            id: registerId
+        }
+    })
+
+    if (attendanceRegistersCount <= 0) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Attendance register not found",
+                code: 4015
+            },
+            data: null
+        })
+        return
+    }
+
+    let body: { attendanceRegisterLecturersId: string[] } = req.body || {}
+
+    body.attendanceRegisterLecturersId = body.attendanceRegisterLecturersId || []
+
+    await prismaClient.attendanceRegisterLecturer.deleteMany({
+        where: {
+            attendanceRegisterId: registerId,
+            id: {
+                in: body.attendanceRegisterLecturersId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 RegisterIDRecordRoute.get("/:registerId/student", idValidator("registerId"), async (req, res) => {
     const prismaClient: PrismaClient = req.app.get("prisma-client")
 
@@ -432,6 +477,51 @@ RegisterIDRecordRoute.get("/:registerId/student", idValidator("registerId"), asy
     res.json({
         ok: true,
         data: students,
+        error: null
+    })
+})
+
+RegisterIDRecordRoute.delete("/:registerId/student", idValidator("registerId"), async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let registerId = req.params.registerId
+
+    let attendanceRegistersCount = await prismaClient.attendanceRegister.count({
+        where: {
+            id: registerId
+        }
+    })
+
+    if (attendanceRegistersCount <= 0) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Attendance register not found",
+                code: 4015
+            },
+            data: null
+        })
+        return
+    }
+
+    let body: { attendanceRegisterStudentsId: string[] } = req.body || {}
+
+    body.attendanceRegisterStudentsId = body.attendanceRegisterStudentsId || []
+
+    await prismaClient.attendanceRegisterStudent.deleteMany({
+        where: {
+            attendanceRegisterId: registerId,
+            id: {
+                in: body.attendanceRegisterStudentsId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
         error: null
     })
 })
