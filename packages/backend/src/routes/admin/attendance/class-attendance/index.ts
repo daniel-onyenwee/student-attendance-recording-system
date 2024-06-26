@@ -554,7 +554,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
                 gte: body.startTime
             },
             endTime: {
-                lte: body.endTime
+                lt: body.endTime
             }
         }
     })

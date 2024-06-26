@@ -301,7 +301,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                     gte: body.startTime || classAttendancesCount.startTime
                 },
                 endTime: {
-                    lte: body.endTime || classAttendancesCount.endTime
+                    lt: body.endTime || classAttendancesCount.endTime
                 }
             }
         })
