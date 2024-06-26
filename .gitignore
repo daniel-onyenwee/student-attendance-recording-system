@@ -1,5 +1,5 @@
 # build output
-lib/
+packages/backend/lib/
 build/
 
 # svelte
