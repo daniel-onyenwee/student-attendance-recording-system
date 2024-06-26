@@ -4,6 +4,7 @@ import { nanoid } from "nanoid"
 import RecordRoute from "./record/index.js"
 import AttendanceRoute from "./attendance/index.js"
 import ReportRoute from "./report/index.js"
+import StatsRoute from "./stats/index.js"
 import { PrismaClient } from "@prisma/client"
 
 interface AdminRequestBody {
@@ -13,7 +14,7 @@ interface AdminRequestBody {
 
 const AdminRoute = express.Router()
 
-AdminRoute.use(authAccess("ADMIN"))
+AdminRoute.use(authAccess("ADMIN", [/^(\/report\/(student|course|lecturer)\/download)/]))
 
 AdminRoute.get("/", async (req, res) => {
     const prismaClient: PrismaClient = req.app.get("prisma-client")
@@ -331,5 +332,7 @@ AdminRoute.use("/record", RecordRoute)
 AdminRoute.use("/attendance", AttendanceRoute)
 
 AdminRoute.use("/report", ReportRoute)
+
+AdminRoute.use("/stats", StatsRoute)
 
 export default AdminRoute

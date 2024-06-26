@@ -2,7 +2,7 @@ import express from "express"
 import ClassAttendanceIDRoute from "./[classAttendanceId]/index.js"
 import { getCurrentSession } from "../../../../utils/index.js"
 import { $Enums, Prisma, PrismaClient } from "@prisma/client"
-import { subMonths } from "date-fns"
+import { subMonths, differenceInHours } from "date-fns"
 import { mergeCourseCrashSQL } from "../../../../services/index.js"
 
 interface ClassAttendanceRequestBody {
@@ -487,6 +487,19 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         return
     }
 
+    if (differenceInHours(body.endTime, body.startTime) > 2) {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Class exceeds two hour",
+                code: 4033
+            },
+            data: null
+        })
+        return
+    }
+
     // Check if the attendance register exist
     let attendanceRegister = await prismaClient.attendanceRegister.findUnique({
         where: {
@@ -541,7 +554,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
                 gte: body.startTime
             },
             endTime: {
-                lte: body.endTime
+                lt: body.endTime
             }
         }
     })
@@ -811,6 +824,29 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             endTime,
             ...otherData
         },
+        error: null
+    })
+})
+
+ClassAttendanceRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { classAttendancesId: string[] } = req.body || {}
+
+    body.classAttendancesId = body.classAttendancesId || []
+
+    await prismaClient.classAttendance.deleteMany({
+        where: {
+            id: {
+                in: body.classAttendancesId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
         error: null
     })
 })

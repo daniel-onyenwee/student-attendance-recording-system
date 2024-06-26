@@ -156,8 +156,10 @@ RegisterRoute.get("/", async (req, res) => {
         }
     })
 
-    let attendanceRegisters = attendanceRegistersQuery.map(({ course: { department: { name: departmentName, faculty: { name: facultyName } }, ...otherCourseData }, ...otherData }) => {
+    let attendanceRegisters = attendanceRegistersQuery.map(({ course: { title, code, department: { name: departmentName, faculty: { name: facultyName } }, ...otherCourseData }, ...otherData }) => {
         return ({
+            courseTitle: title,
+            courseCode: code,
             department: departmentName,
             faculty: facultyName,
             ...otherCourseData,
@@ -406,6 +408,8 @@ RegisterRoute.post("/", async (req, res) => {
 
     const {
         course: {
+            code,
+            title,
             department: {
                 name: departmentName,
                 faculty: {
@@ -420,11 +424,36 @@ RegisterRoute.post("/", async (req, res) => {
     res.json({
         ok: true,
         data: {
+            courseTitle: title,
+            courseCode: code,
             department: departmentName,
             faculty: facultyName,
             ...otherCourseData,
             ...otherData
         },
+        error: null
+    })
+})
+
+RegisterRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { registersId: string[] } = req.body || {}
+
+    body.registersId = body.registersId || []
+
+    await prismaClient.attendanceRegister.deleteMany({
+        where: {
+            id: {
+                in: body.registersId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
         error: null
     })
 })

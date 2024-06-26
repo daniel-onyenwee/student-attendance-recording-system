@@ -23,6 +23,11 @@ export default function auth() {
             return
         }
 
+        if (/^(\/admin\/report\/(student|course|lecturer)\/download)/.test(url.pathname)) {
+            next()
+            return
+        }
+
         const authHeader = req.header("authorization")
         const token = authHeader && authHeader.split(" ")[1]
 

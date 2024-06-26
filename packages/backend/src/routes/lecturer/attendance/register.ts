@@ -129,7 +129,6 @@ RegisterRoute.get("/", async (req, res) => {
         take: !getAllRecord ? count : undefined,
         select: {
             id: true,
-            decision: true,
             session: true,
             course: {
                 select: {
@@ -154,8 +153,10 @@ RegisterRoute.get("/", async (req, res) => {
         }
     })
 
-    let attendanceRegisters = attendanceRegistersQuery.map(({ course: { department: { name: departmentName, faculty: { name: facultyName } }, ...otherCourseData }, ...otherData }) => {
+    let attendanceRegisters = attendanceRegistersQuery.map(({ course: { department: { name: departmentName, faculty: { name: facultyName } }, code, title, ...otherCourseData }, ...otherData }) => {
         return ({
+            courseTitle: title,
+            courseCode: code,
             department: departmentName,
             faculty: facultyName,
             ...otherCourseData,

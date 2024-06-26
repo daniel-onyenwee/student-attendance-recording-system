@@ -7,7 +7,6 @@ import LecturerRoute from "./routes/lecturer/index.js"
 import StudentRoute from "./routes/student/index.js"
 import ImageRoute from "./routes/image.js"
 import UserRoute from "./routes/user.js"
-import ReportRoute from "./routes/report.js"
 import UtilsRoute from "./routes/utils/index.js"
 import fileUpload from "express-fileupload"
 
@@ -38,8 +37,6 @@ AppRoute.use("/student", StudentRoute)
 AppRoute.use("/utils", UtilsRoute)
 
 AppRoute.use("/image", ImageRoute)
-
-AppRoute.use("/report", ReportRoute)
 
 AppRoute.use("/user", UserRoute)
 

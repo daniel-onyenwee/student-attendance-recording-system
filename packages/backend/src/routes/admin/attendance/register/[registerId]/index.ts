@@ -1,11 +1,9 @@
 import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
-import {
-    attendanceRegisterDecisionExpressionTypeChecker,
-    attendanceRegisterStudentDecisionDeterminer
-} from "../../../../../utils/index.js"
+import { attendanceRegisterDecisionExpressionTypeChecker } from "../../../../../utils/index.js"
 import RegisterIDRecordRoute from "./record.js"
-import { PrismaClient } from "@prisma/client"
+import { $Enums, PrismaClient } from "@prisma/client"
+import RegisterIDAttendanceRoute from "./attendance.js"
 
 interface RegisterIDRequestBody {
     courseId: string
@@ -15,82 +13,12 @@ interface RegisterIDRequestBody {
     studentIds: string[]
 }
 
-type ArrangeBy = "classAttendeeName" | "classAttendeeRegno"
-
-type ArrangeOrder = "asc" | "desc"
-
-interface AttendanceRegisterStudentSurnameQueryOrderByObject {
-    student: {
-        surname?: ArrangeOrder
-    }
-}
-
-interface AttendanceRegisterStudentOtherNamesQueryOrderByObject {
-    student: {
-        otherNames?: ArrangeOrder
-    }
-}
-
-type QueryOrderByObject = {
-    student: {
-        regno?: ArrangeOrder
-    }
-} | (AttendanceRegisterStudentSurnameQueryOrderByObject | AttendanceRegisterStudentOtherNamesQueryOrderByObject)[]
-
 const RegisterIDRoute = express.Router()
 
 RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) => {
     const prismaClient: PrismaClient = req.app.get("prisma-client")
 
     let registerId = req.params.registerId
-    let url = new URL(req.url || String(), `http://${req.headers.host}`)
-    let classAttendeeName = url.searchParams.get("classAttendeeName") || String()
-    let classAttendeeRegno = url.searchParams.get("classAttendeeRegno") || String()
-
-    let page = +(url.searchParams.get("page") ?? 1)
-    page = !isNaN(page) ? page : 1
-    page = page > 0 ? page - 1 : 0
-
-    let count = +(url.searchParams.get("count") ?? 10)
-    count = !isNaN(count) ? count : 10
-    count = count > 0 ? count < 1000 ? count : 1000 : 10
-
-    let getAllRecord = url.searchParams.has("all")
-
-    let searchBy: ArrangeBy = "classAttendeeName"
-    if (url.searchParams.has("by")) {
-        let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["classAttendeeName", "classAttendeeRegno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "classAttendeeName"
-    }
-
-    let searchOrder: ArrangeOrder = "asc"
-    if (url.searchParams.has("order")) {
-        let searchParamValue = url.searchParams.get("order") || ""
-        searchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
-    }
-
-    let orderBy: QueryOrderByObject = {
-        student: {}
-    }
-
-    if (searchBy == "classAttendeeRegno") {
-        orderBy.student = {
-            regno: searchOrder
-        }
-    } else {
-        orderBy = [
-            {
-                student: {
-                    otherNames: searchOrder
-                }
-            },
-            {
-                student: {
-                    surname: searchOrder
-                }
-            }
-        ]
-    }
 
     let attendanceRegister = await prismaClient.attendanceRegister.findUnique({
         where: {
@@ -100,88 +28,6 @@ RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) 
             id: true,
             decision: true,
             session: true,
-            attendanceRegisterLecturers: {
-                select: {
-                    lecturer: {
-                        select: {
-                            surname: true,
-                            otherNames: true,
-                            gender: true,
-                            department: {
-                                select: {
-                                    name: true,
-                                    faculty: {
-                                        select: {
-                                            name: true
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-            },
-            attendanceRegisterStudents: {
-                skip: !getAllRecord ? page * count : undefined,
-                take: !getAllRecord ? count : undefined,
-                orderBy,
-                select: {
-                    id: true,
-                    student: {
-                        select: {
-                            surname: true,
-                            otherNames: true,
-                            level: true,
-                            gender: true,
-                            regno: true,
-                            department: {
-                                select: {
-                                    name: true,
-                                    faculty: {
-                                        select: {
-                                            name: true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                where: {
-                    student: {
-                        regno: {
-                            contains: classAttendeeRegno,
-                            mode: "insensitive"
-                        },
-                        OR: [
-                            {
-                                surname: {
-                                    contains: classAttendeeName,
-                                    mode: "insensitive"
-                                }
-                            },
-                            {
-                                otherNames: {
-                                    contains: classAttendeeName,
-                                    mode: "insensitive"
-                                }
-                            },
-                            {
-                                otherNames: {
-                                    in: classAttendeeName.split(/\s+/),
-                                    mode: "insensitive"
-                                }
-                            },
-                            {
-                                surname: {
-                                    in: classAttendeeName.split(/\s+/),
-                                    mode: "insensitive"
-                                }
-                            }
-                        ]
-                    }
-                }
-            },
             course: {
                 select: {
                     title: true,
@@ -198,6 +44,20 @@ RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) 
                             }
                         }
                     }
+                }
+            },
+            classAttendances: {
+                orderBy: {
+                    date: "asc"
+                },
+                where: {
+                    status: $Enums.ClassAttendanceStatus.COMPLETED
+                },
+                select: {
+                    id: true,
+                    date: true,
+                    startTime: true,
+                    endTime: true
                 }
             },
             createdAt: true,
@@ -220,123 +80,29 @@ RegisterIDRoute.get("/:registerId", idValidator("registerId"), async (req, res) 
 
     const {
         course: {
+            title,
+            code,
             department: {
                 name: departmentName,
                 faculty: {
                     name: facultyName
                 }
-            }, ...otherCourseData
+            },
+            ...otherCourseData
         },
-        attendanceRegisterStudents,
-        attendanceRegisterLecturers,
         ...otherData
     } = attendanceRegister
-
-    let attendanceRegisterStudentIds = attendanceRegisterStudents.map(({ id }) => id)
-
-    let classAttendances = await prismaClient.classAttendance.findMany({
-        where: {
-            attendanceRegisterId: registerId
-        },
-        orderBy: {
-            date: "asc"
-        },
-        select: {
-            date: true,
-            classAttendees: {
-                where: {
-                    attendanceRegisterStudentId: {
-                        in: attendanceRegisterStudentIds
-                    }
-                },
-                select: {
-                    attendanceRegisterStudentId: true
-                }
-            }
-        }
-    })
-
-    const numberOfClassTaught = classAttendances.length
-
-    const classesDate = classAttendances.map(({ date }) => date)
-
-    const lecturers = attendanceRegisterLecturers
-        .map(({ lecturer }) => {
-            const {
-                gender,
-                department: {
-                    name: departmentName,
-                    faculty: {
-                        name: facultyName
-                    }
-                },
-                surname,
-                otherNames
-            } = lecturer
-
-            return ({
-                name: `${surname} ${otherNames}`.toUpperCase(),
-                gender,
-                department: departmentName,
-                faculty: facultyName
-            })
-        })
-
-    const students = attendanceRegisterStudents
-        .map(({ id, student: { otherNames, surname, department: { name: departmentName, faculty: { name: facultyName } }, ...otherStudentData } }) => {
-            let attendances: Record<string, "PRESENT" | "ABSENT"> = {}
-            let studentNumberOfClassAttended = 0
-            let studentPercentageOfClassAttended = 0
-
-            classAttendances.forEach(({ date, classAttendees }) => {
-                let isPresent = classAttendees.map(({ attendanceRegisterStudentId }) => attendanceRegisterStudentId).includes(id)
-                if (isPresent) {
-                    studentNumberOfClassAttended += 1
-                }
-                attendances[date.toISOString()] = isPresent ? "PRESENT" : "ABSENT"
-            })
-
-            studentPercentageOfClassAttended = ((studentNumberOfClassAttended / numberOfClassTaught) * 100)
-
-            return ({
-                id,
-                ...otherStudentData,
-                name: `${surname} ${otherNames}`.toString(),
-                department: departmentName,
-                faculty: facultyName,
-                attendances,
-                classesAttended: studentNumberOfClassAttended,
-                classesAttendedPercentage: studentPercentageOfClassAttended,
-                decision: attendanceRegisterStudentDecisionDeterminer(
-                    {
-                        StudentName: `${surname} ${otherNames}`.toString(),
-                        StudentDepartment: departmentName,
-                        StudentFaculty: facultyName,
-                        StudentRegno: otherStudentData.regno,
-                        StudentGender: otherStudentData.gender,
-                        StudentLevel: otherStudentData.level,
-                        StudentNumberOfClassAttended: studentNumberOfClassAttended,
-                        StudentPercentageOfClassAttended: studentPercentageOfClassAttended,
-                        NumberOfClassTaught: numberOfClassTaught
-                    },
-                    structuredClone(attendanceRegister.decision) as any,
-                    "AND"
-                )
-            })
-        })
 
     res.status(200)
     res.json({
         ok: true,
         data: {
+            courseTitle: title,
+            courseCode: code,
             ...otherCourseData,
             ...otherData,
             department: departmentName,
-            faculty: facultyName,
-            classesTaught: numberOfClassTaught,
-            classesDate,
-            lecturers,
-            students
+            faculty: facultyName
         },
         error: null
     })
@@ -354,16 +120,6 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
         select: {
             courseId: true,
             session: true,
-            attendanceRegisterLecturers: {
-                select: {
-                    lecturerId: true
-                }
-            },
-            attendanceRegisterStudents: {
-                select: {
-                    studentId: true
-                }
-            }
         }
     })
 
@@ -544,6 +300,20 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
             id: true,
             decision: true,
             session: true,
+            classAttendances: {
+                where: {
+                    status: $Enums.ClassAttendanceStatus.COMPLETED
+                },
+                orderBy: {
+                    date: "asc"
+                },
+                select: {
+                    id: true,
+                    date: true,
+                    startTime: true,
+                    endTime: true
+                }
+            },
             course: {
                 select: {
                     title: true,
@@ -569,6 +339,8 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
 
     const {
         course: {
+            code,
+            title,
             department: {
                 name: departmentName,
                 faculty: {
@@ -583,6 +355,8 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
     res.json({
         ok: true,
         data: {
+            courseTitle: title,
+            courseCode: code,
             department: departmentName,
             faculty: facultyName,
             ...otherCourseData,
@@ -624,6 +398,20 @@ RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, re
             id: true,
             decision: true,
             session: true,
+            classAttendances: {
+                orderBy: {
+                    date: "asc"
+                },
+                where: {
+                    status: $Enums.ClassAttendanceStatus.COMPLETED
+                },
+                select: {
+                    id: true,
+                    date: true,
+                    startTime: true,
+                    endTime: true
+                }
+            },
             course: {
                 select: {
                     title: true,
@@ -649,6 +437,8 @@ RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, re
 
     const {
         course: {
+            title,
+            code,
             department: {
                 name: departmentName,
                 faculty: {
@@ -663,6 +453,8 @@ RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, re
     res.json({
         ok: true,
         data: {
+            courseTitle: title,
+            courseCode: code,
             department: departmentName,
             faculty: facultyName,
             ...otherCourseData,
@@ -671,6 +463,8 @@ RegisterIDRoute.delete("/:registerId", idValidator("registerId"), async (req, re
         error: null
     })
 })
+
+RegisterIDRoute.use("/", RegisterIDAttendanceRoute)
 
 RegisterIDRoute.use("/", RegisterIDRecordRoute)
 

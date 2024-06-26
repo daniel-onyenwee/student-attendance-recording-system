@@ -253,6 +253,27 @@ SignInRoute.post("/", async (req, res) => {
         return
     }
 
+    if (body.crashCourseId) {
+        let coursesCount = await prismaClient.course.count({
+            where: {
+                id: body.crashCourseId
+            }
+        })
+
+        if (coursesCount <= 0) {
+            res.status(400)
+            res.json({
+                ok: false,
+                error: {
+                    message: "Course not found",
+                    code: 3015
+                },
+                data: null
+            })
+            return
+        }
+    }
+
     let newAttendanceRegisterStudent = await prismaClient.attendanceRegisterStudent.upsert({
         where: {
             attendanceRegisterId_studentId: {

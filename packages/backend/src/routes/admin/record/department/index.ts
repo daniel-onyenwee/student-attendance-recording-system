@@ -239,6 +239,29 @@ DepartmentRoute.post("/", async (req, res) => {
     })
 })
 
+DepartmentRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { departmentsId: string[] } = req.body || {}
+
+    body.departmentsId = body.departmentsId || []
+
+    await prismaClient.department.deleteMany({
+        where: {
+            id: {
+                in: body.departmentsId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 DepartmentRoute.use("/", DepartmentIDRoute)
 
 export default DepartmentRoute

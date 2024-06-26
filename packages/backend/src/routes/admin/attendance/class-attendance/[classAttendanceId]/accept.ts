@@ -33,6 +33,19 @@ AcceptRoute.post("/:classAttendanceId/accept", idValidator("classAttendanceId"),
         return
     }
 
+    if (classAttendancesCount.status == "ONGOING") {
+        res.status(400)
+        res.json({
+            ok: false,
+            error: {
+                message: "Class attendance is ongoing",
+                code: 4027
+            },
+            data: null
+        })
+        return
+    }
+
     if (classAttendancesCount.status == "COMPLETED") {
         res.status(400)
         res.json({

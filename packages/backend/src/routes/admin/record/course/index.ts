@@ -355,6 +355,29 @@ CourseRoute.post("/", async (req, res) => {
     })
 })
 
+CourseRoute.delete("/", async (req, res) => {
+    const prismaClient: PrismaClient = req.app.get("prisma-client")
+
+    let body: { coursesId: string[] } = req.body || {}
+
+    body.coursesId = body.coursesId || []
+
+    await prismaClient.course.deleteMany({
+        where: {
+            id: {
+                in: body.coursesId
+            }
+        }
+    })
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
+    })
+})
+
 CourseRoute.use("/", CourseIDRoute)
 
 export default CourseRoute

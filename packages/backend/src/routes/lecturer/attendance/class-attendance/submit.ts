@@ -88,7 +88,6 @@ SubmitRoute.post("/", async (req, res) => {
             createdAt: true,
             updatedAt: true,
             submittedAt: true,
-            status: true,
             attendanceRegister: {
                 select: {
                     session: true,
