@@ -9,14 +9,16 @@ import ImageRoute from "./routes/image.js"
 import UserRoute from "./routes/user.js"
 import UtilsRoute from "./routes/utils/index.js"
 import fileUpload from "express-fileupload"
-
 import { auth, logger, notFound } from "./middleware/index.js"
+import cors from "cors"
 
 const AppRoute = express()
 
 AppRoute.use(bodyParser.json())
 
 AppRoute.use(bodyParser.urlencoded({ extended: true }))
+
+AppRoute.use(cors())
 
 AppRoute.use(auth())
 
