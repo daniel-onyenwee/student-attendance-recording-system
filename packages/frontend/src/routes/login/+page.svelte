@@ -62,13 +62,13 @@
         return;
       }
 
-      toast.success("Request Successfully", {
-        description: "Successfully login",
+      toast.success("Request successfully", {
+        description: "Login successfully",
       });
 
       await goto("/");
     } catch (error) {
-      toast.success("Request failed", {
+      toast.error("Request failed", {
         description: "Unexpected error",
       });
     }
@@ -82,10 +82,10 @@
 </script>
 
 <svelte:head>
-  <title>Login | SARS</title>
+  <title>Login</title>
 </svelte:head>
 
-<section class="main">
+<main class="bg-muted/40 h-screen w-screen flex justify-center items-center">
   <Card.Root class="w-[350px]">
     <Card.Header>
       <Card.Title>Login</Card.Title>
@@ -98,7 +98,7 @@
         <div class="grid w-full items-center gap-4">
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.type && "text-destructive"}
+              class={userDetailErrorMessage.type && "text-red-600"}
               for="userType">User role</Label
             >
             <Select.Root {onSelectedChange}>
@@ -116,7 +116,7 @@
               </Select.Content>
             </Select.Root>
             <p
-              class="text-sm font-medium text-destructive {!userDetailErrorMessage.type &&
+              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.type &&
                 'hidden'}"
             >
               {userDetailErrorMessage.type}
@@ -124,7 +124,7 @@
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.username && "text-destructive"}
+              class={userDetailErrorMessage.username && "text-red-600"}
               for="username"
               >{userDetail.type == "STUDENT" ? "Regno" : "Username"}</Label
             >
@@ -137,7 +137,7 @@
                 : "Username"}
             />
             <p
-              class="text-sm font-medium text-destructive {!userDetailErrorMessage.username &&
+              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.username &&
                 'hidden'}"
             >
               {userDetailErrorMessage.username}
@@ -145,7 +145,7 @@
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.password && "text-destructive"}
+              class={userDetailErrorMessage.password && "text-red-600"}
               for="password">Password</Label
             >
             <Input
@@ -155,7 +155,7 @@
               placeholder="Password"
             />
             <p
-              class="text-sm font-medium text-destructive {!userDetailErrorMessage.password &&
+              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.password &&
                 'hidden'}"
             >
               {userDetailErrorMessage.password}
@@ -173,15 +173,4 @@
       </Button>
     </Card.Footer>
   </Card.Root>
-</section>
-
-<style>
-  section.main {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-</style>
+</main>

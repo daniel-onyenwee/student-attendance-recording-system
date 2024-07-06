@@ -6,9 +6,13 @@ export interface AuthModel {
 
 export type UserType = "ADMIN" | "STUDENT" | "LECTURER"
 
-type ServiceHandle<ServiceBody, Data> = (data: ServiceBody) => ServiceData<Data> | Promise<ServiceData<Data>>
+type ServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null ?
+    () => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>> :
+    (data: ServiceBody) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>>
 
-type AuthenticatedServiceHandle<ServiceBody, Data> = (data: ServiceBody & { accessToken: string }) => ServiceData<Data> | Promise<ServiceData<Data>>
+type AuthenticatedServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null ?
+    ({ accessToken: string }) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>> :
+    (data: ServiceBody & { accessToken: string }) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>>
 
 interface ServiceError {
     code: number

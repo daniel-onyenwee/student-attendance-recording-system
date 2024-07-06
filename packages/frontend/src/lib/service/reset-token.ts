@@ -5,7 +5,7 @@ import {
 } from "./utils"
 import type { AuthModel, AuthenticatedServiceHandle } from "./type"
 
-export const resetToken: AuthenticatedServiceHandle<{}, AuthModel> = async (data) => {
+export const resetToken: AuthenticatedServiceHandle<null, AuthModel> = async (data) => {
     let response = await fetch(new URL("/auth/reset-token", BACKEND_BASE_URL), {
         method: "POST",
         headers: AuthenticatedHeadersInit(data.accessToken)
