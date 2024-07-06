@@ -6,4 +6,4 @@
 
 <ModeWatcher />
 <Toaster />
-<slot />
+<slot></slot>
