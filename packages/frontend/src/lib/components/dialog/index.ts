@@ -1,3 +1,7 @@
 export { default as DeleteAdminDialog } from "./delete-admin.svelte"
 export { default as EditAdminDialog } from "./edit-admin.svelte"
 export { default as CreateAdminDialog } from "./create-admin.svelte"
+export { default as SessionAlertDialog } from "./session-alert.svelte"
+export { default as DeleteRecordDialog } from "./delete-record.svelte"
+export { default as FacultyRecordDialog } from "./faculty-record.svelte"
+export { default as DepartmentRecordDialog } from "./department-record.svelte"
