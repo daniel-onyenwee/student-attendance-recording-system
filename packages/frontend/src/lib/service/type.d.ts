@@ -4,15 +4,24 @@ export interface AuthModel {
     refreshToken: string
 }
 
+export interface Pagination {
+    page?: number
+    count?: number | "all"
+}
+
+export interface SortByOption {
+    ascending?: boolean
+}
+
 export type UserType = "ADMIN" | "STUDENT" | "LECTURER"
 
 type ServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null ?
-    () => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>> :
-    (data: ServiceBody) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>>
+    () => Promise<ServiceData<ServiceReturnedData>> :
+    (data: ServiceBody) => Promise<ServiceData<ServiceReturnedData>>
 
 type AuthenticatedServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null ?
-    ({ accessToken: string }) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>> :
-    (data: ServiceBody & { accessToken: string }) => ServiceData<ServiceReturnedData> | Promise<ServiceData<ServiceReturnedData>>
+    ({ accessToken: string }) => Promise<ServiceData<ServiceReturnedData>> :
+    (data: ServiceBody & { accessToken: string }) => Promise<ServiceData<ServiceReturnedData>>
 
 interface ServiceError {
     code: number
@@ -24,3 +33,7 @@ export interface ServiceData<T> {
     error: ServiceError | null
     data: T | null
 }
+
+type LevelNumber = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 1000
+
+export type Level = `L_${LevelNumber}`
