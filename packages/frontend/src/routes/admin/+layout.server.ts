@@ -1,21 +1,18 @@
 import { getAdminUser, type AdminUserModel } from "@/service";
 import type { LayoutServerLoad } from "./$types";
+import { error } from '@sveltejs/kit';
 
 export const load = (async ({ url, locals }) => {
     let currentPage = url.pathname
 
     let user: AdminUserModel = {} as AdminUserModel
 
-    try {
-        let { data } = await getAdminUser({ accessToken: locals.session.accessToken })
+    let { data } = await getAdminUser({ accessToken: locals.session.accessToken })
 
-        if (data) {
-            user = data
-        } else {
-            user = {} as AdminUserModel
-        }
-    } catch (error) {
-        user = {} as AdminUserModel
+    if (data) {
+        user = data
+    } else {
+        throw error(404, "Not Found");
     }
 
     return {
@@ -76,11 +73,11 @@ const getBreadCrumbItems = (currentPage: string) => {
         if (path == "admin") {
             items.push({ href: "/admin", label: "dashboard" })
         } else if (path == "record") {
-            items.push({ href: "##", label: "records" })
+            items.push({ href: "##", label: "record" })
         } else if (path == "attendance") {
-            items.push({ href: "##", label: "attendances" })
+            items.push({ href: "##", label: "attendance" })
         } else if (path == "report") {
-            items.push({ href: "##", label: "reports" })
+            items.push({ href: "##", label: "report" })
         } else if (["department", "course", "student", "lecturer", "register"].includes(path)) {
             items.push({ href: jointPaths, label: path + "s" })
         } else if (path == "faculty") {
