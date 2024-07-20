@@ -15,6 +15,30 @@ export const AuthenticatedHeadersInit = (accessToken: string) => {
     }
 }
 
+export function urlSortAndFilterAttacher<FilterObjectType extends any, SortObjectType extends Partial<{ by: any; ascending: boolean }> | undefined>({ url, filter, sort, count, page }: { url: URL; filter?: FilterObjectType; sort?: SortObjectType; count?: "all" | number; page?: number }): URL {
+    if (count == "all") {
+        url.searchParams.append("all", String())
+    } else if (count && page) {
+        url.searchParams.append("count", count.toString())
+        url.searchParams.append("page", page.toString())
+    }
+
+    for (const filterKey in (filter || {})) {
+        let filterValue = Object(filter)[filterKey]
+
+        if (filterValue) {
+            url.searchParams.append(filterKey, filterValue.toString())
+        }
+    }
+
+    if (sort && sort.by && sort.ascending) {
+        url.searchParams.append("by", sort.by.toString())
+        url.searchParams.append("order", sort.ascending ? "asc" : "desc")
+    }
+
+    return url
+}
+
 export let BACKEND_BASE_URL = env.PUBLIC_BACKEND_BASE_URL
 
 export let SECRET_KEY = env.PUBLIC_SECRET_KEY
