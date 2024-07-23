@@ -7,7 +7,7 @@ interface FacultyServiceBody {
 }
 
 export interface FacultySortByOption extends SortByOption {
-    by?: "name" | "updatedAt" | "createdAt"
+    by: "name" | "updatedAt" | "createdAt"
 }
 
 export type FacultyFilterByOption = Partial<FacultyServiceBody>
