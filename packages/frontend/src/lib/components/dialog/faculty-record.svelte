@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { mediaQuery } from "svelte-legos";
   import { LoaderCircle } from "lucide-svelte/icons";
   import { showDialogToast } from "@/utils";
   import { createFaculty, updateFaculty, type FacultyModel } from "@/service";
-  import * as Dialog from "@/components/ui/dialog";
-  import * as Drawer from "@/components/ui/drawer";
+  import * as Sheet from "@/components/ui/sheet";
   import { Button } from "@/components/ui/button";
   import { createEventDispatcher } from "svelte";
   import { Label } from "@/components/ui/label";
@@ -103,7 +101,6 @@
   let facultyData: Partial<FacultyModel> = {};
   let open = false;
   let dialogMode: "CREATE" | "UPDATE" = "CREATE";
-  let isDesktop = mediaQuery("(min-width: 768px)");
   let dispatch = createEventDispatcher();
 
   $: dialogTitle = `${dialogMode == "CREATE" ? "Create" : "Edit"} faculty`;
@@ -114,102 +111,51 @@
   }`;
 </script>
 
-{#if $isDesktop}
-  <Dialog.Root
-    closeOnEscape={!requestOngoing}
-    closeOnOutsideClick={!requestOngoing}
-    onOpenChange={(open) => {
-      if (!open) {
-        internalClose();
-      }
-    }}
-    bind:open
-  >
-    <Dialog.Content class="sm:max-w-[425px]">
-      <Dialog.Header>
-        <Dialog.Title>{dialogTitle}</Dialog.Title>
-        <Dialog.Description>{dialogDescription}</Dialog.Description>
-      </Dialog.Header>
-      <form class="grid items-start gap-4">
-        <div class="grid gap-2">
-          <Label for="name">Name</Label>
-          <Input
-            placeholder="Faculty name"
-            type="text"
-            id="name"
-            bind:value={facultyData.name}
-          />
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
-              'hidden'}"
-          >
-            {errorMessage.name}
-          </p>
-        </div>
-        <Button
-          type="submit"
-          on:click={onCreateOrUpdate}
-          disabled={requestOngoing}
+<Sheet.Root
+  closeOnEscape={!requestOngoing}
+  closeOnOutsideClick={!requestOngoing}
+  bind:open
+  onOpenChange={(open) => {
+    if (!open) {
+      internalClose();
+    }
+  }}
+>
+  <Sheet.Content side="right" class="overflow-auto">
+    <Sheet.Header>
+      <Sheet.Title>{dialogTitle}</Sheet.Title>
+      <Sheet.Description>{dialogDescription}</Sheet.Description>
+    </Sheet.Header>
+    <form class="grid items-start gap-4 mt-4">
+      <div class="grid gap-2">
+        <Label for="name">Name</Label>
+        <Input
+          placeholder="Faculty name"
+          type="text"
+          id="name"
+          bind:value={facultyData.name}
+        />
+        <p
+          class="text-sm font-medium text-red-600 {!errorMessage.name &&
+            'hidden'}"
         >
-          <LoaderCircle
-            class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
-          />
-          {!requestOngoing
-            ? dialogMode == "CREATE"
-              ? "Create"
-              : "Save"
-            : "Please wait"}
-        </Button>
-      </form>
-    </Dialog.Content>
-  </Dialog.Root>
-{:else}
-  <Drawer.Root
-    closeOnEscape={!requestOngoing}
-    closeOnOutsideClick={!requestOngoing}
-    onOpenChange={(open) => {
-      if (!open) {
-        internalClose();
-      }
-    }}
-    bind:open
-  >
-    <Drawer.Content>
-      <Drawer.Header class="text-left">
-        <Drawer.Title>{dialogTitle}</Drawer.Title>
-        <Drawer.Description>{dialogDescription}</Drawer.Description>
-      </Drawer.Header>
-      <form class="grid items-start gap-4 px-4">
-        <div class="grid gap-2">
-          <Label for="name">Name</Label>
-          <Input type="text" id="name" bind:value={facultyData.name} />
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
-              'hidden'}"
-          >
-            {errorMessage.name}
-          </p>
-        </div>
-        <Button
-          type="submit"
-          on:click={onCreateOrUpdate}
-          disabled={requestOngoing}
-        >
-          <LoaderCircle
-            class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
-          />
-          {!requestOngoing
-            ? dialogMode == "CREATE"
-              ? "Create"
-              : "Save"
-            : "Please wait"}
-        </Button>
-      </form>
-      <Drawer.Footer class="pt-2">
-        <Drawer.Close disabled={requestOngoing} asChild let:builder>
-          <Button variant="outline" builders={[builder]}>Cancel</Button>
-        </Drawer.Close>
-      </Drawer.Footer>
-    </Drawer.Content>
-  </Drawer.Root>
-{/if}
+          {errorMessage.name}
+        </p>
+      </div>
+      <Button
+        type="submit"
+        on:click={onCreateOrUpdate}
+        disabled={requestOngoing}
+      >
+        <LoaderCircle
+          class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
+        />
+        {!requestOngoing
+          ? dialogMode == "CREATE"
+            ? "Create"
+            : "Save"
+          : "Please wait"}
+      </Button>
+    </form>
+  </Sheet.Content>
+</Sheet.Root>

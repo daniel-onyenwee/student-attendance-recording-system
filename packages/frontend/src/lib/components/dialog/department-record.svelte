@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { mediaQuery } from "svelte-legos";
   import { LoaderCircle, ChevronsUpDown, Check } from "lucide-svelte/icons";
   import { showDialogToast } from "@/utils";
   import * as Command from "@/components/ui/command";
@@ -12,8 +11,7 @@
     type DepartmentModel,
   } from "@/service";
   import { cn } from "@/utils.js";
-  import * as Dialog from "@/components/ui/dialog";
-  import * as Drawer from "@/components/ui/drawer";
+  import * as Sheet from "@/components/ui/sheet";
   import { Button } from "@/components/ui/button";
   import { createEventDispatcher, tick } from "svelte";
   import { Label } from "@/components/ui/label";
@@ -29,19 +27,11 @@
       departmentData = structuredClone(data);
     }
     open = true;
-    getFaculties({ accessToken, count: "all" })
-      .then(({ data }) => {
-        faculties = data || [];
-      })
-      .finally(() => {
-        facultiesLoaded = true;
-      });
   }
 
   export function close() {
     internalClose();
     open = false;
-    facultiesLoaded = false;
   }
 
   function internalClose() {
@@ -64,6 +54,26 @@
     }
     departmentData.levels = departmentData.levels;
     levelsPopoverOpen = false;
+  }
+
+  function onFacultySelected(facultyName: string) {
+    departmentData.faculty = facultyName;
+    facultyPopoverOpen = false;
+    facultiesLoaded = false;
+    faculties = [];
+  }
+
+  async function onFacultyPopoverOpened(open?: boolean) {
+    if (open) {
+      try {
+        faculties =
+          (await getFaculties({ accessToken, count: "all" })).data || [];
+      } catch (error) {
+        faculties = [];
+      } finally {
+        facultiesLoaded = true;
+      }
+    }
   }
 
   function closeAndFocusTrigger(triggerId: string) {
@@ -145,7 +155,7 @@
       showDialogToast(
         "SUCCESS",
         "Request successfully",
-        `Faculty successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
+        `Department successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
       dispatch("onSuccessful");
     } catch (error) {
@@ -165,7 +175,6 @@
   let facultiesLoaded = false;
   let faculties: FacultyModel[] = [];
   let dialogMode: "CREATE" | "UPDATE" = "CREATE";
-  let isDesktop = mediaQuery("(min-width: 768px)");
   let dispatch = createEventDispatcher();
 
   $: dialogTitle = `${dialogMode == "CREATE" ? "Create" : "Edit"} department`;
@@ -179,223 +188,174 @@
     : undefined;
 </script>
 
-{#if $isDesktop}
-  <Dialog.Root
-    closeOnEscape={!requestOngoing}
-    closeOnOutsideClick={!requestOngoing}
-    onOpenChange={(open) => {
-      if (!open) {
-        internalClose();
-      }
-    }}
-    bind:open
-  >
-    <Dialog.Content class="sm:max-w-[425px]">
-      <Dialog.Header>
-        <Dialog.Title>{dialogTitle}</Dialog.Title>
-        <Dialog.Description>{dialogDescription}</Dialog.Description>
-      </Dialog.Header>
-      <form class="grid items-start gap-4">
-        <div class="grid gap-2">
-          <Label for="name">Name</Label>
-          <Input
-            placeholder="Department name"
-            type="text"
-            id="name"
-            bind:value={departmentData.name}
-          />
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
-              'hidden'}"
-          >
-            {errorMessage.name}
-          </p>
-        </div>
-        <div class="grid gap-2">
-          <Label for="name">Faculty</Label>
-          <Popover.Root bind:open={facultyPopoverOpen} let:ids>
-            <Popover.Trigger asChild let:builder>
-              <Button
-                builders={[builder]}
-                variant="outline"
-                role="combobox"
-                aria-expanded={facultyPopoverOpen}
-                class="w-full justify-between font-normal {departmentData.faculty ==
-                  undefined && 'text-muted-foreground'}"
-              >
-                {#if departmentData.faculty}
-                  {departmentData.faculty}
-                {:else}
-                  Select faculty
-                {/if}
-                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-              <Command.Root loop>
-                <Command.Input placeholder="Search faculty..." />
-                <Command.List>
-                  {#if facultiesLoaded}
-                    <Command.Empty>No faculty found.</Command.Empty>
-                    <Command.Group>
-                      {#each faculties as faculty}
-                        <Command.Item
-                          onSelect={(currentValue) => {
-                            departmentData.facultyId = faculty.id;
-                            departmentData.faculty = currentValue;
-                            facultyPopoverOpen = false;
-                            closeAndFocusTrigger(ids.trigger);
-                          }}
-                          value={faculty.name}
-                        >
-                          <Check
-                            class={cn(
-                              "mr-2 h-4 w-4",
-                              departmentData.faculty !== faculty.name &&
-                                "text-transparent"
-                            )}
-                          />
-                          {faculty.name}
-                        </Command.Item>
-                      {/each}
-                    </Command.Group>
-                  {:else}
-                    <Command.Loading class="py-6 text-center text-sm">
-                      Loading faculties..
-                    </Command.Loading>
-                  {/if}
-                </Command.List>
-              </Command.Root>
-            </Popover.Content>
-          </Popover.Root>
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.faculty &&
-              'hidden'}"
-          >
-            {errorMessage.faculty}
-          </p>
-        </div>
-        <div class="grid gap-2">
-          <Label for="name">Levels</Label>
-          <Popover.Root bind:open={levelsPopoverOpen} let:ids>
-            <Popover.Trigger asChild let:builder>
-              <Button
-                builders={[builder]}
-                variant="outline"
-                role="combobox"
-                aria-expanded={levelsPopoverOpen}
-                class="w-full justify-between font-normal {selectedLevels ==
-                  undefined && 'text-muted-foreground'}"
-              >
-                {#if selectedLevels}
-                  {selectedLevels}
-                {:else}
-                  Select levels
-                {/if}
-                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-              <Command.Root loop>
-                <Command.Input placeholder="Search levels..." />
-                <Command.List>
-                  <Command.Empty>No levels found.</Command.Empty>
+<Sheet.Root
+  closeOnEscape={!requestOngoing}
+  closeOnOutsideClick={!requestOngoing}
+  bind:open
+  onOpenChange={(open) => {
+    if (!open) {
+      internalClose();
+    }
+  }}
+>
+  <Sheet.Content side="right" class="overflow-auto">
+    <Sheet.Header>
+      <Sheet.Title>{dialogTitle}</Sheet.Title>
+      <Sheet.Description>{dialogDescription}</Sheet.Description>
+    </Sheet.Header>
+    <form class="grid items-start gap-4 mt-4">
+      <div class="grid gap-2">
+        <Label for="name">Name</Label>
+        <Input
+          placeholder="Department name"
+          type="text"
+          id="name"
+          bind:value={departmentData.name}
+        />
+        <p
+          class="text-sm font-medium text-red-600 {!errorMessage.name &&
+            'hidden'}"
+        >
+          {errorMessage.name}
+        </p>
+      </div>
+      <div class="grid gap-2">
+        <Label for="faculty">Faculty</Label>
+        <Popover.Root
+          bind:open={facultyPopoverOpen}
+          onOpenChange={(open) => onFacultyPopoverOpened(open)}
+          let:ids
+        >
+          <Popover.Trigger asChild let:builder>
+            <Button
+              builders={[builder]}
+              variant="outline"
+              role="combobox"
+              aria-expanded={facultyPopoverOpen}
+              class="w-full justify-between font-normal {departmentData.faculty ==
+                undefined && 'text-muted-foreground'}"
+            >
+              {#if departmentData.faculty}
+                {departmentData.faculty}
+              {:else}
+                Select faculty
+              {/if}
+              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+            <Command.Root loop>
+              <Command.Input placeholder="Search faculty..." />
+              <Command.List class="max-h-52">
+                {#if facultiesLoaded}
+                  <Command.Empty>No faculty found.</Command.Empty>
                   <Command.Group>
-                    {#each { length: 10 } as _, i}
+                    {#each faculties as faculty}
                       <Command.Item
-                        onSelect={() => {
-                          onLevelsSelected(i.toString());
+                        onSelect={(currentValue) => {
+                          departmentData.facultyId = faculty.id;
+                          onFacultySelected(currentValue);
                           closeAndFocusTrigger(ids.trigger);
                         }}
-                        value={convertNumToLevels(i + 1)}
+                        value={faculty.name}
                       >
                         <Check
                           class={cn(
                             "mr-2 h-4 w-4",
-                            selectedLevels !== convertNumToLevels(i + 1) &&
+                            departmentData.faculty !== faculty.name &&
                               "text-transparent"
                           )}
                         />
-                        {convertNumToLevels(i + 1)}
+                        {faculty.name}
                       </Command.Item>
                     {/each}
                   </Command.Group>
-                </Command.List>
-              </Command.Root>
-            </Popover.Content>
-          </Popover.Root>
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.levels &&
-              'hidden'}"
-          >
-            {errorMessage.levels}
-          </p>
-        </div>
-        <Button
-          type="submit"
-          on:click={onCreateOrUpdate}
-          disabled={requestOngoing}
+                {:else}
+                  <Command.Loading class="py-6 text-center text-sm">
+                    Loading faculties..
+                  </Command.Loading>
+                {/if}
+              </Command.List>
+            </Command.Root>
+          </Popover.Content>
+        </Popover.Root>
+        <p
+          class="text-sm font-medium text-red-600 {!errorMessage.faculty &&
+            'hidden'}"
         >
-          <LoaderCircle
-            class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
-          />
-          {!requestOngoing
-            ? dialogMode == "CREATE"
-              ? "Create"
-              : "Save"
-            : "Please wait"}
-        </Button>
-      </form>
-    </Dialog.Content>
-  </Dialog.Root>
-{:else}
-  <Drawer.Root
-    closeOnEscape={!requestOngoing}
-    closeOnOutsideClick={!requestOngoing}
-    onOpenChange={(open) => {
-      if (!open) {
-        internalClose();
-      }
-    }}
-    bind:open
-  >
-    <Drawer.Content>
-      <Drawer.Header class="text-left">
-        <Drawer.Title>{dialogTitle}</Drawer.Title>
-        <Drawer.Description>{dialogDescription}</Drawer.Description>
-      </Drawer.Header>
-      <form class="grid items-start gap-4 px-4">
-        <div class="grid gap-2">
-          <Label for="name">Name</Label>
-          <Input type="text" id="name" bind:value={departmentData.name} />
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
-              'hidden'}"
-          >
-            {errorMessage.name}
-          </p>
-        </div>
-
-        <Button
-          type="submit"
-          on:click={onCreateOrUpdate}
-          disabled={requestOngoing}
+          {errorMessage.faculty}
+        </p>
+      </div>
+      <div class="grid gap-2">
+        <Label for="levels">Levels</Label>
+        <Popover.Root bind:open={levelsPopoverOpen} let:ids>
+          <Popover.Trigger asChild let:builder>
+            <Button
+              builders={[builder]}
+              variant="outline"
+              role="combobox"
+              aria-expanded={levelsPopoverOpen}
+              class="w-full justify-between font-normal {selectedLevels ==
+                undefined && 'text-muted-foreground'}"
+            >
+              {#if selectedLevels}
+                {selectedLevels}
+              {:else}
+                Select levels
+              {/if}
+              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+            <Command.Root loop>
+              <Command.Input placeholder="Search levels..." />
+              <Command.List class="max-h-52">
+                <Command.Empty>No levels found.</Command.Empty>
+                <Command.Group>
+                  {#each { length: 10 } as _, i}
+                    <Command.Item
+                      onSelect={() => {
+                        onLevelsSelected(i.toString());
+                        closeAndFocusTrigger(ids.trigger);
+                      }}
+                      value={convertNumToLevels(i + 1)}
+                    >
+                      <Check
+                        class={cn(
+                          "mr-2 h-4 w-4",
+                          selectedLevels !== convertNumToLevels(i + 1) &&
+                            "text-transparent"
+                        )}
+                      />
+                      {convertNumToLevels(i + 1)}
+                    </Command.Item>
+                  {/each}
+                </Command.Group>
+              </Command.List>
+            </Command.Root>
+          </Popover.Content>
+        </Popover.Root>
+        <p
+          class="text-sm font-medium text-red-600 {!errorMessage.levels &&
+            'hidden'}"
         >
-          <LoaderCircle
-            class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
-          />
-          {!requestOngoing
-            ? dialogMode == "CREATE"
-              ? "Create"
-              : "Save"
-            : "Please wait"}
-        </Button>
-      </form>
-      <Drawer.Footer class="pt-2">
-        <Drawer.Close disabled={requestOngoing} asChild let:builder>
-          <Button variant="outline" builders={[builder]}>Cancel</Button>
-        </Drawer.Close>
-      </Drawer.Footer>
-    </Drawer.Content>
-  </Drawer.Root>
-{/if}
+          {errorMessage.levels}
+        </p>
+      </div>
+      <Button
+        type="submit"
+        on:click={onCreateOrUpdate}
+        disabled={requestOngoing}
+      >
+        <LoaderCircle
+          class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
+        />
+        {!requestOngoing
+          ? dialogMode == "CREATE"
+            ? "Create"
+            : "Save"
+          : "Please wait"}
+      </Button>
+    </form>
+  </Sheet.Content>
+</Sheet.Root>
