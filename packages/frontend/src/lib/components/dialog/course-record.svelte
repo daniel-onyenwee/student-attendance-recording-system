@@ -20,10 +20,10 @@
   export let accessToken: string;
 
   function show(mode: "CREATE", data: undefined): void;
-  function show(mode: "UPDATE", data: CourseModel): void;
-  export function show(mode: "CREATE" | "UPDATE", data: any) {
+  function show(mode: "UPDATE" | "VIEW", data: CourseModel): void;
+  export function show(mode: "CREATE" | "UPDATE" | "VIEW", data: any) {
     dialogMode = mode;
-    if (mode == "UPDATE") {
+    if (mode == "UPDATE" || mode == "VIEW") {
       courseData = structuredClone(data);
     }
     open = true;
@@ -175,15 +175,21 @@
   let departmentPopoverOpen = false;
   let departmentsLoaded = false;
   let departments: DepartmentModel[] = [];
-  let dialogMode: "CREATE" | "UPDATE" = "CREATE";
+  let dialogMode: "CREATE" | "UPDATE" | "VIEW" = "CREATE";
   let dispatch = createEventDispatcher();
 
-  $: dialogTitle = `${dialogMode == "CREATE" ? "Create" : "Edit"} course`;
-  $: dialogDescription = `${
-    dialogMode == "CREATE"
-      ? "Create a new course here. Click create when you're done."
-      : "Make changes to the course here. Click save when you're done."
-  }`;
+  $: dialogTitle =
+    dialogMode == "VIEW"
+      ? "Course details"
+      : `${dialogMode == "CREATE" ? "Create" : "Edit"} course`;
+  $: dialogDescription =
+    dialogMode == "VIEW"
+      ? "Complete information about the course"
+      : `${
+          dialogMode == "CREATE"
+            ? "Create a new course here. Click create when you're done."
+            : "Make changes to the course here. Click save when you're done."
+        }`;
 </script>
 
 <Sheet.Root
@@ -204,216 +210,274 @@
     <form class="grid items-start gap-4 mt-4">
       <div class="grid gap-2">
         <Label for="title">Title</Label>
-        <Input
-          placeholder="Course title"
-          type="text"
-          id="title"
-          bind:value={courseData.title}
-        />
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.title &&
-            'hidden'}"
-        >
-          {errorMessage.title}
-        </p>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="title"
+          >
+            {courseData.title}
+          </span>
+        {:else}
+          <Input
+            placeholder="Course title"
+            type="text"
+            id="title"
+            bind:value={courseData.title}
+          />
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.title &&
+              'hidden'}"
+          >
+            {errorMessage.title}
+          </p>
+        {/if}
       </div>
       <div class="grid gap-2">
         <Label for="code">Code</Label>
-        <Input
-          placeholder="Course code"
-          type="text"
-          id="code"
-          bind:value={courseData.code}
-        />
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.code &&
-            'hidden'}"
-        >
-          {errorMessage.code}
-        </p>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="code"
+          >
+            {courseData.code}
+          </span>
+        {:else}
+          <Input
+            placeholder="Course code"
+            type="text"
+            id="code"
+            bind:value={courseData.code}
+          />
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.code &&
+              'hidden'}"
+          >
+            {errorMessage.code}
+          </p>
+        {/if}
       </div>
       <div class="grid gap-2">
         <Label for="department">Department</Label>
-        <Popover.Root
-          bind:open={departmentPopoverOpen}
-          onOpenChange={(open) => onDepartmentPopoverOpened(open)}
-          let:ids
-        >
-          <Popover.Trigger asChild let:builder>
-            <Button
-              builders={[builder]}
-              variant="outline"
-              role="combobox"
-              aria-expanded={departmentPopoverOpen}
-              class="w-full justify-between font-normal {courseData.department ==
-                undefined && 'text-muted-foreground'}"
-            >
-              {#if courseData.department}
-                {courseData.department}
-              {:else}
-                Select department
-              {/if}
-              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-            <Command.Root loop>
-              <Command.Input placeholder="Search department..." />
-              <Command.List>
-                {#if departmentsLoaded}
-                  <Command.Empty>No department found.</Command.Empty>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="department"
+          >
+            {courseData.department}
+          </span>
+        {:else}
+          <Popover.Root
+            bind:open={departmentPopoverOpen}
+            onOpenChange={(open) => onDepartmentPopoverOpened(open)}
+            let:ids
+          >
+            <Popover.Trigger asChild let:builder>
+              <Button
+                builders={[builder]}
+                variant="outline"
+                role="combobox"
+                aria-expanded={departmentPopoverOpen}
+                class="w-full justify-between font-normal {courseData.department ==
+                  undefined && 'text-muted-foreground'}"
+              >
+                {#if courseData.department}
+                  {courseData.department}
+                {:else}
+                  Select department
+                {/if}
+                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+              <Command.Root loop>
+                <Command.Input placeholder="Search department..." />
+                <Command.List>
+                  {#if departmentsLoaded}
+                    <Command.Empty>No department found.</Command.Empty>
+                    <Command.Group>
+                      {#each departments as department}
+                        <Command.Item
+                          onSelect={(currentValue) => {
+                            courseData.departmentId = department.id;
+                            onDepartmentSelected(currentValue);
+                            closeAndFocusTrigger(ids.trigger);
+                          }}
+                          value={department.name}
+                        >
+                          <Check
+                            class={cn(
+                              "mr-2 h-4 w-4",
+                              courseData.department !== department.name &&
+                                "text-transparent"
+                            )}
+                          />
+                          {department.name}
+                        </Command.Item>
+                      {/each}
+                    </Command.Group>
+                  {:else}
+                    <Command.Loading class="py-6 text-center text-sm">
+                      Loading departments..
+                    </Command.Loading>
+                  {/if}
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.department &&
+              'hidden'}"
+          >
+            {errorMessage.department}
+          </p>
+        {/if}
+      </div>
+      {#if dialogMode == "VIEW"}
+        <div class="grid gap-2">
+          <Label for="faculty">Faculty</Label>
+          <span
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="faculty"
+          >
+            {courseData.faculty}
+          </span>
+        </div>
+      {/if}
+      <div class="grid gap-2">
+        <Label for="semester">Semester</Label>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="semester"
+          >
+            {courseData.semester}
+          </span>
+        {:else}
+          <Popover.Root bind:open={semesterPopoverOpen} let:ids>
+            <Popover.Trigger asChild let:builder>
+              <Button
+                builders={[builder]}
+                variant="outline"
+                role="combobox"
+                aria-expanded={semesterPopoverOpen}
+                class="w-full justify-between font-normal {courseData.semester ==
+                  undefined && 'text-muted-foreground'}"
+              >
+                {#if courseData.semester}
+                  {courseData.semester}
+                {:else}
+                  Select semester
+                {/if}
+                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+              <Command.Root loop>
+                <Command.Input placeholder="Search semester..." />
+                <Command.List>
+                  <Command.Empty>No semester found.</Command.Empty>
                   <Command.Group>
-                    {#each departments as department}
+                    {#each ["FIRST", "SECOND"] as semester}
                       <Command.Item
                         onSelect={(currentValue) => {
-                          courseData.departmentId = department.id;
-                          onDepartmentSelected(currentValue);
+                          onSemesterSelected(currentValue);
                           closeAndFocusTrigger(ids.trigger);
                         }}
-                        value={department.name}
+                        value={semester}
                       >
                         <Check
                           class={cn(
                             "mr-2 h-4 w-4",
-                            courseData.department !== department.name &&
+                            courseData.semester !== semester &&
                               "text-transparent"
                           )}
                         />
-                        {department.name}
+                        {semester}
                       </Command.Item>
                     {/each}
                   </Command.Group>
-                {:else}
-                  <Command.Loading class="py-6 text-center text-sm">
-                    Loading departments..
-                  </Command.Loading>
-                {/if}
-              </Command.List>
-            </Command.Root>
-          </Popover.Content>
-        </Popover.Root>
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.department &&
-            'hidden'}"
-        >
-          {errorMessage.department}
-        </p>
-      </div>
-      <div class="grid gap-2">
-        <Label for="semester">Semester</Label>
-        <Popover.Root bind:open={semesterPopoverOpen} let:ids>
-          <Popover.Trigger asChild let:builder>
-            <Button
-              builders={[builder]}
-              variant="outline"
-              role="combobox"
-              aria-expanded={semesterPopoverOpen}
-              class="w-full justify-between font-normal {courseData.semester ==
-                undefined && 'text-muted-foreground'}"
-            >
-              {#if courseData.semester}
-                {courseData.semester}
-              {:else}
-                Select semester
-              {/if}
-              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-            <Command.Root loop>
-              <Command.Input placeholder="Search semester..." />
-              <Command.List>
-                <Command.Empty>No semester found.</Command.Empty>
-                <Command.Group>
-                  {#each ["FIRST", "SECOND"] as semester}
-                    <Command.Item
-                      onSelect={(currentValue) => {
-                        onSemesterSelected(currentValue);
-                        closeAndFocusTrigger(ids.trigger);
-                      }}
-                      value={semester}
-                    >
-                      <Check
-                        class={cn(
-                          "mr-2 h-4 w-4",
-                          courseData.semester !== semester && "text-transparent"
-                        )}
-                      />
-                      {semester}
-                    </Command.Item>
-                  {/each}
-                </Command.Group>
-              </Command.List>
-            </Command.Root>
-          </Popover.Content>
-        </Popover.Root>
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.semester &&
-            'hidden'}"
-        >
-          {errorMessage.semester}
-        </p>
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.semester &&
+              'hidden'}"
+          >
+            {errorMessage.semester}
+          </p>
+        {/if}
       </div>
       <div class="grid gap-2">
         <Label for="level">Level</Label>
-        <Popover.Root bind:open={levelsPopoverOpen} let:ids>
-          <Popover.Trigger asChild let:builder>
-            <Button
-              builders={[builder]}
-              variant="outline"
-              role="combobox"
-              aria-expanded={levelsPopoverOpen}
-              class="w-full justify-between font-normal {courseData.level ==
-                undefined && 'text-muted-foreground'}"
-            >
-              {#if courseData.level}
-                {courseData.level.replace("L_", String())}L
-              {:else}
-                Select level
-              {/if}
-              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-            <Command.Root loop>
-              <Command.Input placeholder="Search level..." />
-              <Command.List>
-                <Command.Empty>No level found.</Command.Empty>
-                <Command.Group>
-                  {#each { length: 10 } as _, i}
-                    <Command.Item
-                      onSelect={(currentValue) => {
-                        onLevelSelected(currentValue);
-                        closeAndFocusTrigger(ids.trigger);
-                      }}
-                      value={`${(i + 1) * 100}`}
-                    >
-                      <Check
-                        class={cn(
-                          "mr-2 h-4 w-4",
-                          courseData.level !== `L_${(i + 1) * 100}` &&
-                            "text-transparent"
-                        )}
-                      />
-                      {(i + 1) * 100}L
-                    </Command.Item>
-                  {/each}
-                </Command.Group>
-              </Command.List>
-            </Command.Root>
-          </Popover.Content>
-        </Popover.Root>
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.level &&
-            'hidden'}"
-        >
-          {errorMessage.level}
-        </p>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="level"
+          >
+            {(courseData.level || "L_100").replace("L_", String())}L
+          </span>
+        {:else}
+          <Popover.Root bind:open={levelsPopoverOpen} let:ids>
+            <Popover.Trigger asChild let:builder>
+              <Button
+                builders={[builder]}
+                variant="outline"
+                role="combobox"
+                aria-expanded={levelsPopoverOpen}
+                class="w-full justify-between font-normal {courseData.level ==
+                  undefined && 'text-muted-foreground'}"
+              >
+                {#if courseData.level}
+                  {courseData.level.replace("L_", String())}L
+                {:else}
+                  Select level
+                {/if}
+                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+              <Command.Root loop>
+                <Command.Input placeholder="Search level..." />
+                <Command.List>
+                  <Command.Empty>No level found.</Command.Empty>
+                  <Command.Group>
+                    {#each { length: 10 } as _, i}
+                      <Command.Item
+                        onSelect={(currentValue) => {
+                          onLevelSelected(currentValue);
+                          closeAndFocusTrigger(ids.trigger);
+                        }}
+                        value={`${(i + 1) * 100}`}
+                      >
+                        <Check
+                          class={cn(
+                            "mr-2 h-4 w-4",
+                            courseData.level !== `L_${(i + 1) * 100}` &&
+                              "text-transparent"
+                          )}
+                        />
+                        {(i + 1) * 100}L
+                      </Command.Item>
+                    {/each}
+                  </Command.Group>
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.level &&
+              'hidden'}"
+          >
+            {errorMessage.level}
+          </p>
+        {/if}
       </div>
       <Button
         type="submit"
         on:click={onCreateOrUpdate}
         disabled={requestOngoing}
+        class={dialogMode == "VIEW" ? "hidden" : "visible"}
       >
         <LoaderCircle
           class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"

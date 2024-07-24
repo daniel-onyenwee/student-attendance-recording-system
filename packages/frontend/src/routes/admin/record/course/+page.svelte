@@ -1,14 +1,10 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import {
-    ArrowDown,
-    ArrowUp,
     CirclePlus,
-    ListFilter,
     Ellipsis,
     LoaderCircle,
     Trash2,
-    Search,
   } from "lucide-svelte/icons";
   import { Button } from "@/components/ui/button";
   import * as Card from "@/components/ui/card";
@@ -33,15 +29,6 @@
     CourseRecordDialog,
   } from "@/components/dialog";
   import { SortByMenu, FilterByMenu } from "@/components/menu";
-
-  type FilterByScheme =
-    | {
-        type: "text" | "number";
-      }
-    | {
-        type: "select";
-        options: Array<{ label?: string; value: string }> | Array<string>;
-      };
 
   export let data: PageData;
 
@@ -178,7 +165,7 @@
     department: String(),
     faculty: String(),
   };
-  let filterScheme: { [name: string]: FilterByScheme } = {
+  let filterScheme: { [name: string]: App.FilterByScheme } = {
     semester: {
       type: "select",
       options: ["FIRST", "SECOND"],
@@ -272,12 +259,16 @@
                 courses.length == coursesSelected.size}
             />
           </Table.Head>
-          <Table.Head class="min-w-[360px]">Title</Table.Head>
-          <Table.Head class="min-w-24">Code</Table.Head>
-          <Table.Head class="min-w-28">Semester</Table.Head>
-          <Table.Head class="min-w-20">Level</Table.Head>
-          <Table.Head class="min-w-[215px]">Department</Table.Head>
-          <Table.Head class="min-w-[215px]">Faculty</Table.Head>
+          <Table.Head class="min-w-72 max-w-72 truncate">Title</Table.Head>
+          <Table.Head class="min-w-28 max-w-28 truncate">Code</Table.Head>
+          <Table.Head class="min-w-28 max-w-28 truncate">Semester</Table.Head>
+          <Table.Head class="min-w-24 max-w-24 truncate">Level</Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Department
+          </Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Faculty
+          </Table.Head>
           <Table.Head class="min-w-[115px]">Created at</Table.Head>
           <Table.Head class="min-w-[115px]">Modified at</Table.Head>
           <Table.Head class="w-[25px]">
@@ -294,26 +285,26 @@
                 onCheckedChange={(value) => onCourseSelected(course.id, value)}
               />
             </Table.Cell>
-            <Table.Cell class="min-w-[360px]">
+            <Table.Cell class="min-w-72 max-w-72 truncate">
               {course.title}
             </Table.Cell>
-            <Table.Cell class="min-w-20">
+            <Table.Cell class="min-w-28 max-w-28 truncate">
               {course.code}
             </Table.Cell>
-            <Table.Cell class="min-w-28">
+            <Table.Cell class="min-w-28 max-w-28 truncate">
               <Badge variant="default">
                 {course.semester}
               </Badge>
             </Table.Cell>
-            <Table.Cell class="min-w-24">
+            <Table.Cell class="min-w-24 max-w-24 truncate">
               <Badge variant="outline">
                 {course.level.replace("L_", String())}L
               </Badge>
             </Table.Cell>
-            <Table.Cell class="min-w-[215px]">
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
               {course.department}
             </Table.Cell>
-            <Table.Cell class="min-w-[215px]">
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
               {course.faculty}
             </Table.Cell>
             <Table.Cell class="min-w-[115px]">
@@ -337,6 +328,10 @@
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
                   <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                  <DropdownMenu.Item
+                    on:click={() => courseRecordDialog.show("VIEW", course)}
+                    >View</DropdownMenu.Item
+                  >
                   <DropdownMenu.Item
                     on:click={() => courseRecordDialog.show("UPDATE", course)}
                     >Edit</DropdownMenu.Item
