@@ -247,7 +247,7 @@
           <Table.Head class="min-w-72 max-w-72 truncate">Name</Table.Head>
           <Table.Head class="min-w-52 max-w-52 truncate">Username</Table.Head>
           <Table.Head class="min-w-36 max-w-36 truncate">Password</Table.Head>
-          <Table.Head class="min-w-24">Gender</Table.Head>
+          <Table.Head class="min-w-28">Gender</Table.Head>
           <Table.Head class="min-w-[215px] max-w-[215px] truncate">
             Department
           </Table.Head>
@@ -280,7 +280,7 @@
             <Table.Cell class="min-w-44 max-w-44 truncate">
               {lecturer.password}
             </Table.Cell>
-            <Table.Cell class="min-w-24">
+            <Table.Cell class="min-w-28">
               <Badge variant="default">
                 {lecturer.gender}
               </Badge>
