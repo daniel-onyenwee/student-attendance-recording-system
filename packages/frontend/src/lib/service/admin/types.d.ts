@@ -47,3 +47,9 @@ export interface LecturerModel extends RecordModel {
     username: string
     password: string
 }
+
+export interface StudentModel extends Omit<LecturerModel, "username"> {
+    regno: string
+    level: Level
+    faceImage: string
+}
