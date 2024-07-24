@@ -38,4 +38,6 @@ type LevelNumber = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 1000
 
 export type Level = `L_${LevelNumber}`
 
-export type Semester = "FIRST" | "SECOND" 
+export type Semester = "FIRST" | "SECOND"
+
+export type Gender = "MALE" | "FEMALE"
