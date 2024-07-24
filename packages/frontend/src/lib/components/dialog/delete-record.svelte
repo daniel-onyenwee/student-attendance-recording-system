@@ -7,6 +7,7 @@
     deleteDepartments,
     deleteCourses,
     deleteLecturers,
+    deleteStudents,
   } from "@/service";
   import * as Dialog from "@/components/ui/dialog";
   import * as Drawer from "@/components/ui/drawer";
@@ -55,6 +56,11 @@
         serviceRequest = await deleteLecturers({
           accessToken: accessToken,
           lecturersId: recordsToDeleteId,
+        });
+      } else if (type == "STUDENT") {
+        serviceRequest = await deleteStudents({
+          accessToken: accessToken,
+          studentsId: recordsToDeleteId,
         });
       }
 
