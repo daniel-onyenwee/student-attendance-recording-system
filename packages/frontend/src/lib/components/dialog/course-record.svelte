@@ -46,7 +46,7 @@
 
   function onLevelSelected(currentValue: string) {
     courseData.level = `L_${currentValue}` as any;
-    levelsPopoverOpen = false;
+    levelPopoverOpen = false;
   }
 
   function onDepartmentSelected(departmentName: string) {
@@ -170,7 +170,7 @@
   let errorMessage: Partial<Record<keyof CourseModel, string>> = {};
   let courseData: Partial<CourseModel & { departmentId: string }> = {};
   let open = false;
-  let levelsPopoverOpen = false;
+  let levelPopoverOpen = false;
   let semesterPopoverOpen = false;
   let departmentPopoverOpen = false;
   let departmentsLoaded = false;
@@ -418,13 +418,13 @@
             {(courseData.level || "L_100").replace("L_", String())}L
           </span>
         {:else}
-          <Popover.Root bind:open={levelsPopoverOpen} let:ids>
+          <Popover.Root bind:open={levelPopoverOpen} let:ids>
             <Popover.Trigger asChild let:builder>
               <Button
                 builders={[builder]}
                 variant="outline"
                 role="combobox"
-                aria-expanded={levelsPopoverOpen}
+                aria-expanded={levelPopoverOpen}
                 class="w-full justify-between font-normal {courseData.level ==
                   undefined && 'text-muted-foreground'}"
               >
