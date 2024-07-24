@@ -1,10 +1,13 @@
-import type { Level } from "../type"
+import type {
+    Level,
+    Semester,
+    Gender
+} from "../type"
 
 interface BaseModel {
     id: string
     updatedAt: Date
     createdAt: Date
-    metadata: { [name: string]: any }
 }
 
 export interface AdminUserModel extends BaseModel {
@@ -24,11 +27,23 @@ export interface DepartmentModel extends BaseModel {
     levels: Level[]
 }
 
-export interface CourseModel extends BaseModel {
+interface RecordModel extends BaseModel {
     faculty: string
     department: string
+}
+
+export interface CourseModel extends RecordModel {
     semester: Semester
     level: Level
     code: string
     title: string
+}
+
+export interface LecturerModel extends RecordModel {
+    name: string
+    gender: Gender
+    surname: string,
+    otherNames: string,
+    username: string
+    password: string
 }
