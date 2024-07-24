@@ -86,12 +86,12 @@
 </svelte:head>
 
 <main class="bg-muted/40 h-screen w-screen flex justify-center items-center">
-  <Card.Root class="w-[350px]">
+  <Card.Root class="w-[350px] mx-auto max-w-sm">
     <Card.Header>
-      <Card.Title>Login</Card.Title>
-      <Card.Description
-        >Instant dashboard access with one-click.</Card.Description
-      >
+      <Card.Title class="text-2xl">Login</Card.Title>
+      <Card.Description>
+        Instant dashboard access with one-click.
+      </Card.Description>
     </Card.Header>
     <Card.Content>
       <form>

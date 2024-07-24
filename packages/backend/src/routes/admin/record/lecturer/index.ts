@@ -180,6 +180,8 @@ LecturerRoute.get("/", async (req, res) => {
     let lecturers = lecturersQuery.map(({ department: { name: departmentName, faculty: { name: facultyName } }, surname, otherNames, ...otherData }) => {
         return ({
             name: `${surname} ${otherNames}`.toUpperCase(),
+            surname,
+            otherNames,
             ...otherData,
             department: departmentName,
             faculty: facultyName
@@ -367,6 +369,8 @@ LecturerRoute.post("/", async (req, res) => {
         data: {
             id,
             name: `${surname} ${otherNames}`.toUpperCase(),
+            surname,
+            otherNames,
             password,
             username,
             gender,

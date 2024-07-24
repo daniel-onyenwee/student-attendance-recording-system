@@ -55,7 +55,7 @@
         >
           <div class="flex gap-x-3.5 items-center">
             <TableProperties class="h-5 w-5" />
-            <span>Attendances</span>
+            <span>Attendance</span>
           </div>
           <ChevronRight
             class="h-5 w-5 {isMenuCollapsed.attendances && 'hidden'}"
@@ -104,7 +104,7 @@
         >
           <div class="flex gap-x-3.5 items-center">
             <SquareLibrary class="h-5 w-5" />
-            <span>Records</span>
+            <span>Record</span>
           </div>
           <ChevronRight class="h-5 w-5 {isMenuCollapsed.records && 'hidden'}" />
           <ChevronDown class="h-5 w-5 {!isMenuCollapsed.records && 'hidden'}" />
@@ -182,7 +182,7 @@
         >
           <div class="flex gap-x-3.5 items-center">
             <FileSpreadsheet class="h-5 w-5" />
-            <span>Reports</span>
+            <span>Report</span>
           </div>
           <ChevronRight class="h-5 w-5 {isMenuCollapsed.reports && 'hidden'}" />
           <ChevronDown class="h-5 w-5 {!isMenuCollapsed.reports && 'hidden'}" />

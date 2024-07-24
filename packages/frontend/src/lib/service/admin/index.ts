@@ -1,5 +1,3 @@
 export type * from "./types.d.ts"
-export { getAdminUser } from "./get-admin-user.js"
-export { createAdminUser } from "./create-admin-user.js"
-export { deleteAdminUser } from "./delete-admin-user.js"
-export { updateAdminUser } from "./update-admin-user.js"
+export * from "./admin-user.js"
+export * from "./record/index.js"

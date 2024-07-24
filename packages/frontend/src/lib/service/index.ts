@@ -1,6 +1,5 @@
-export { login } from "./login.js"
 export * from "./check-user.js"
 export * from "./admin/index.js"
+export * from "./auth.js"
 export { getSession } from "./get-session.js"
-export { resetToken } from "./reset-token.js"
 export type * from "./type.d.ts"

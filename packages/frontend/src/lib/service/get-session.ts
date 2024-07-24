@@ -1,9 +1,6 @@
-import {
-    AuthenticatedHeadersInit,
-    SECRET_KEY
-} from "./utils"
-import type { ServiceHandle, AuthModel } from "./type"
-import { resetToken } from "./reset-token"
+import { AuthenticatedHeadersInit, SECRET_KEY } from "./utils.js"
+import type { ServiceHandle, AuthModel } from "./type.d.ts"
+import { resetToken } from "./auth.js"
 
 export const getSession: ServiceHandle<null, AuthModel> = async () => {
     let response = await fetch(new URL("/session", window.location.origin), {
