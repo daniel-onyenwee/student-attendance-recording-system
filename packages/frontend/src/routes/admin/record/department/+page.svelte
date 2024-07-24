@@ -228,9 +228,13 @@
                 departments.length == departmentsSelected.size}
             />
           </Table.Head>
-          <Table.Head class="min-w-[215px]">Name</Table.Head>
-          <Table.Head class="min-w-80">Levels</Table.Head>
-          <Table.Head class="min-w-[215px]">Faculty</Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Name
+          </Table.Head>
+          <Table.Head class="min-w-[340px] max-w-[340px]">Levels</Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Faculty
+          </Table.Head>
           <Table.Head class="min-w-[115px]">Created at</Table.Head>
           <Table.Head class="min-w-[115px]">Modified at</Table.Head>
           <Table.Head class="w-[25px]">
@@ -248,10 +252,10 @@
                   onDepartmentSelected(department.id, value)}
               />
             </Table.Cell>
-            <Table.Cell class="min-w-[215px]">
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
               {department.name}
             </Table.Cell>
-            <Table.Cell class="min-w-80">
+            <Table.Cell class="min-w-[340px] max-w-[340px]">
               <div class="flex gap-3 justify-start flex-wrap">
                 {#each department.levels as level}
                   <Badge variant="secondary">
@@ -260,7 +264,7 @@
                 {/each}
               </div>
             </Table.Cell>
-            <Table.Cell class="min-w-[215px]">
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
               {department.faculty}
             </Table.Cell>
             <Table.Cell class="min-w-[115px]">
@@ -284,6 +288,11 @@
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
                   <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                  <DropdownMenu.Item
+                    on:click={() =>
+                      departmentRecordDialog.show("VIEW", department)}
+                    >View</DropdownMenu.Item
+                  >
                   <DropdownMenu.Item
                     on:click={() =>
                       departmentRecordDialog.show("UPDATE", department)}
