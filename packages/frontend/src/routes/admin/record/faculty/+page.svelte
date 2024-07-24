@@ -226,7 +226,9 @@
                 faculties.length == facultiesSelected.size}
             />
           </Table.Head>
-          <Table.Head class="min-w-[215px]">Name</Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Name
+          </Table.Head>
           <Table.Head class="min-w-[115px]">Created at</Table.Head>
           <Table.Head class="min-w-[115px]">Modified at</Table.Head>
           <Table.Head class="w-[25px]">
@@ -244,7 +246,7 @@
                   onFacultySelected(faculty.id, value)}
               />
             </Table.Cell>
-            <Table.Cell class="min-w-[215px]">
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
               {faculty.name}
             </Table.Cell>
             <Table.Cell class="min-w-[115px]">
@@ -268,6 +270,10 @@
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
                   <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                  <DropdownMenu.Item
+                    on:click={() => facultyRecordDialog.show("VIEW", faculty)}
+                    >View</DropdownMenu.Item
+                  >
                   <DropdownMenu.Item
                     on:click={() => facultyRecordDialog.show("UPDATE", faculty)}
                     >Edit</DropdownMenu.Item

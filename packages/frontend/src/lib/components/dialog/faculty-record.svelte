@@ -11,10 +11,10 @@
   export let accessToken: string;
 
   function show(mode: "CREATE", data: undefined): void;
-  function show(mode: "UPDATE", data: FacultyModel): void;
-  export function show(mode: "CREATE" | "UPDATE", data: any) {
+  function show(mode: "UPDATE" | "VIEW", data: FacultyModel): void;
+  export function show(mode: "CREATE" | "UPDATE" | "VIEW", data: any) {
     dialogMode = mode;
-    if (mode == "UPDATE") {
+    if (mode == "UPDATE" || mode == "VIEW") {
       facultyData = structuredClone(data);
     }
     open = true;
@@ -100,15 +100,21 @@
   let errorMessage: Partial<Record<keyof FacultyModel, string>> = {};
   let facultyData: Partial<FacultyModel> = {};
   let open = false;
-  let dialogMode: "CREATE" | "UPDATE" = "CREATE";
+  let dialogMode: "CREATE" | "UPDATE" | "VIEW" = "CREATE";
   let dispatch = createEventDispatcher();
 
-  $: dialogTitle = `${dialogMode == "CREATE" ? "Create" : "Edit"} faculty`;
-  $: dialogDescription = `${
-    dialogMode == "CREATE"
-      ? "Create a new faculty here. Click create when you're done."
-      : "Make changes to the faculty here. Click save when you're done."
-  }`;
+  $: dialogTitle =
+    dialogMode == "VIEW"
+      ? "Faculty details"
+      : `${dialogMode == "CREATE" ? "Create" : "Edit"} faculty`;
+  $: dialogDescription =
+    dialogMode == "VIEW"
+      ? "Complete information about the faculty"
+      : `${
+          dialogMode == "CREATE"
+            ? "Create a new faculty here. Click create when you're done."
+            : "Make changes to the faculty here. Click save when you're done."
+        }`;
 </script>
 
 <Sheet.Root
@@ -129,23 +135,33 @@
     <form class="grid items-start gap-4 mt-4">
       <div class="grid gap-2">
         <Label for="name">Name</Label>
-        <Input
-          placeholder="Faculty name"
-          type="text"
-          id="name"
-          bind:value={facultyData.name}
-        />
-        <p
-          class="text-sm font-medium text-red-600 {!errorMessage.name &&
-            'hidden'}"
-        >
-          {errorMessage.name}
-        </p>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="name"
+          >
+            {facultyData.name}
+          </span>
+        {:else}
+          <Input
+            placeholder="Faculty name"
+            type="text"
+            id="name"
+            bind:value={facultyData.name}
+          />
+          <p
+            class="text-sm font-medium text-red-600 {!errorMessage.name &&
+              'hidden'}"
+          >
+            {errorMessage.name}
+          </p>
+        {/if}
       </div>
       <Button
         type="submit"
         on:click={onCreateOrUpdate}
         disabled={requestOngoing}
+        class={dialogMode == "VIEW" ? "hidden" : "visible"}
       >
         <LoaderCircle
           class="mr-2 h-4 w-4 animate-spin {!requestOngoing && 'hidden'}"
