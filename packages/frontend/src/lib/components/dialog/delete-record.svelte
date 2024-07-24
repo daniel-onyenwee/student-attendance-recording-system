@@ -2,7 +2,12 @@
   import { mediaQuery } from "svelte-legos";
   import { LoaderCircle } from "lucide-svelte/icons";
   import { capitalizeText, showDialogToast } from "@/utils";
-  import { deleteFaculties, deleteDepartments, deleteCourses } from "@/service";
+  import {
+    deleteFaculties,
+    deleteDepartments,
+    deleteCourses,
+    deleteLecturers,
+  } from "@/service";
   import * as Dialog from "@/components/ui/dialog";
   import * as Drawer from "@/components/ui/drawer";
   import { Button } from "@/components/ui/button";
@@ -45,6 +50,11 @@
         serviceRequest = await deleteCourses({
           accessToken: accessToken,
           coursesId: recordsToDeleteId,
+        });
+      } else if (type == "LECTURER") {
+        serviceRequest = await deleteLecturers({
+          accessToken: accessToken,
+          lecturersId: recordsToDeleteId,
         });
       }
 
