@@ -55,16 +55,22 @@
   }
   body {
     @apply bg-background text-foreground;
+
     ::-webkit-scrollbar {
       width: 0.5rem;
       height: 0.5rem;
+      background: transparent;
     }
+
     ::-webkit-scrollbar-thumb {
       border-radius: calc(var(--radius) - 4px);
+    }
+
+    :hover::-webkit-scrollbar-thumb {
       background-color: hsl(var(--muted-foreground) / 0.3) !important;
     }
 
-    ::-webkit-scrollbar-track {
+    :hover::-webkit-scrollbar-track {
       --tw-bg-opacity: 1 !important;
       background-color: hsl(var(--muted) / var(--tw-bg-opacity)) !important;
     }
