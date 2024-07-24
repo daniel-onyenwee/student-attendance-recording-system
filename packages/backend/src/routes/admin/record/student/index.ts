@@ -187,11 +187,13 @@ StudentRoute.get("/", async (req, res) => {
         }
     })
 
-    let student = studentsQuery.map(({ department: { name: departmentName, faculty: { name: facultyName } }, surname, otherNames, ...otherData }) => {
+    let students = studentsQuery.map(({ department: { name: departmentName, faculty: { name: facultyName } }, surname, otherNames, ...otherData }) => {
         let faceImage = new URL(`/image/student-face/${otherData.id}`, `http://${req.headers.host}`)
         return ({
             name: `${surname} ${otherNames}`.toUpperCase(),
             ...otherData,
+            surname,
+            otherNames,
             faceImage,
             department: departmentName,
             faculty: facultyName
@@ -201,7 +203,7 @@ StudentRoute.get("/", async (req, res) => {
     res.status(200)
     res.json({
         ok: true,
-        data: student,
+        data: students,
         error: null
     })
 })
@@ -429,6 +431,8 @@ StudentRoute.post("/", async (req, res) => {
             id,
             name: `${surname} ${otherNames}`.toUpperCase(),
             password,
+            surname,
+            otherNames,
             regno,
             level,
             faceImage,
