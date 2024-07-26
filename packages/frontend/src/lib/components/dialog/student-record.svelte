@@ -227,6 +227,16 @@
       <Sheet.Description>{dialogDescription}</Sheet.Description>
     </Sheet.Header>
     <form class="grid items-start gap-4 mt-4">
+      {#if dialogMode == "VIEW"}
+        <div
+          class="flex justify-start w-full max-w-full h-56 items-end bg-no-repeat bg-contain bg-center bg-white"
+          style="background-image: url('{studentData.faceImage}');"
+        >
+          <span class="p-2 w-full border bg-accent opacity-50 text-base">
+            Passport
+          </span>
+        </div>
+      {/if}
       <div class="grid gap-2">
         <Label for="surname">Surname</Label>
         {#if dialogMode == "VIEW"}
