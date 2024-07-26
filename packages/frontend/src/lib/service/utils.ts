@@ -1,17 +1,17 @@
 import { env } from "$env/dynamic/public"
 
-export const HeadersInit = () => {
-    return {
+export const HeadersInit = (contentType: string | null = "application/json") => {
+    let basicHeaders = {
         "Accept": "*/*",
         "User-Agent": "SARS Web App",
-        "Content-Type": "application/json"
     }
+    return { ...basicHeaders, ...(contentType ? { "Content-Type": "application/json" } : {}) }
 }
 
-export const AuthenticatedHeadersInit = (accessToken: string) => {
+export const AuthenticatedHeadersInit = (accessToken: string, contentType: string | null = "application/json") => {
     return {
         "Authorization": `Bearer ${accessToken}`,
-        ...HeadersInit()
+        ...HeadersInit(contentType)
     }
 }
 
