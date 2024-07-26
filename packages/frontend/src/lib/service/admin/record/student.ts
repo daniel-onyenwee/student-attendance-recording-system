@@ -78,6 +78,24 @@ export const updateStudent: AuthenticatedServiceHandle<Partial<StudentServiceBod
     return responseBody
 }
 
+export const uploadStudentFace: AuthenticatedServiceHandle<{ faceImage: Blob, id: string }, { faceImage: string }> = async (data) => {
+    let { accessToken, faceImage, id } = data
+
+    let bodyContent = new FormData()
+
+    bodyContent.append("faceImage", faceImage)
+
+    let response = await fetch(new URL(`/admin/record/student/${id}/face-image`, BACKEND_BASE_URL), {
+        method: "POST",
+        headers: AuthenticatedHeadersInit(accessToken, null),
+        body: bodyContent
+    })
+
+    let responseBody = await response.json()
+
+    return responseBody
+}
+
 export const deleteStudents: AuthenticatedServiceHandle<{ studentsId: string[] }, null> = async (data) => {
     let { accessToken, ...otherData } = data
 
