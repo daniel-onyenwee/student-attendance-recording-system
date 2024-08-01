@@ -10,7 +10,7 @@ interface RegisterIDAttendanceRequestBody {
     status: "PRESENT" | "ABSENT"
 }
 
-type ArrangeBy = "classAttendeeName" | "classAttendeeRegno"
+type ArrangeBy = "name" | "regno"
 
 type ArrangeOrder = "asc" | "desc"
 
@@ -40,8 +40,8 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
     let registerId = req.params.registerId
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
-    let classAttendeeName = url.searchParams.get("classAttendeeName") || String()
-    let classAttendeeRegno = url.searchParams.get("classAttendeeRegno") || String()
+    let name = url.searchParams.get("name") || String()
+    let regno = url.searchParams.get("regno") || String()
 
     let page = +(url.searchParams.get("page") ?? 1)
     page = !isNaN(page) ? page : 1
@@ -53,10 +53,10 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
 
     let getAllRecord = url.searchParams.has("all")
 
-    let searchBy: ArrangeBy = "classAttendeeName"
+    let searchBy: ArrangeBy = "name"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["classAttendeeName", "classAttendeeRegno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "classAttendeeName"
+        searchBy = ["name", "regno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "name"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -69,7 +69,7 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
         student: {}
     }
 
-    if (searchBy == "classAttendeeRegno") {
+    if (searchBy == "regno") {
         orderBy.student = {
             regno: searchOrder
         }
@@ -123,31 +123,31 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
                 where: {
                     student: {
                         regno: {
-                            contains: classAttendeeRegno,
+                            contains: regno,
                             mode: "insensitive"
                         },
                         OR: [
                             {
                                 surname: {
-                                    contains: classAttendeeName,
+                                    contains: name,
                                     mode: "insensitive"
                                 }
                             },
                             {
                                 otherNames: {
-                                    contains: classAttendeeName,
+                                    contains: name,
                                     mode: "insensitive"
                                 }
                             },
                             {
                                 otherNames: {
-                                    in: classAttendeeName.split(/\s+/),
+                                    in: name.split(/\s+/),
                                     mode: "insensitive"
                                 }
                             },
                             {
                                 surname: {
-                                    in: classAttendeeName.split(/\s+/),
+                                    in: name.split(/\s+/),
                                     mode: "insensitive"
                                 }
                             }
@@ -182,19 +182,17 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
             attendanceRegisterId: registerId,
             status: $Enums.ClassAttendanceStatus.COMPLETED
         },
-        orderBy: {
-            date: "asc"
-        },
+        orderBy: [
+            {
+                date: "asc"
+            },
+            {
+                startTime: "asc"
+            }
+        ],
         select: {
-            date: true,
-            startTime: true,
-            endTime: true,
+            id: true,
             classAttendees: {
-                where: {
-                    attendanceRegisterStudentId: {
-                        in: attendanceRegisterStudentIds
-                    }
-                },
                 select: {
                     attendanceRegisterStudentId: true
                 }
@@ -205,26 +203,31 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
     const numberOfClassTaught = classAttendances.length
 
     const attendances = attendanceRegisterStudents
-        .map(({ id, student: { otherNames, surname, department: { name: departmentName, faculty: { name: facultyName } }, ...otherStudentData } }) => {
+        .map(({ id: attendanceRegisterStudentId, student: { otherNames, surname, department: { name: departmentName, faculty: { name: facultyName } }, ...otherStudentData } }) => {
             let attendances: Record<string, "PRESENT" | "ABSENT"> = {}
             let studentNumberOfClassAttended = 0
             let studentPercentageOfClassAttended = 0
 
-            classAttendances.forEach(({ date, endTime, startTime, classAttendees }) => {
-                let isPresent = classAttendees.map(({ attendanceRegisterStudentId }) => attendanceRegisterStudentId).includes(id)
+            classAttendances.forEach(({ id: classAttendanceId, classAttendees }) => {
+                let isPresent = classAttendees.map(({ attendanceRegisterStudentId }) => attendanceRegisterStudentId).includes(attendanceRegisterStudentId)
                 if (isPresent) {
                     studentNumberOfClassAttended += 1
                 }
-                let key = `${format(date, "yyyy-dd-LL")}T${startTime.getUTCHours().toString().padStart(2, "0")}:${startTime.getUTCMinutes().toString().padStart(2, "0")}-${endTime.getUTCHours().toString().padStart(2, "0")}:${endTime.getUTCMinutes().toString().padStart(2, "0")}`
-                attendances[key] = isPresent ? "PRESENT" : "ABSENT"
+                attendances[classAttendanceId] = isPresent ? "PRESENT" : "ABSENT"
             })
 
-            studentPercentageOfClassAttended = ((studentNumberOfClassAttended / numberOfClassTaught) * 100)
+            if (studentNumberOfClassAttended > 0) {
+                studentPercentageOfClassAttended = ((studentNumberOfClassAttended / numberOfClassTaught) * 100)
+            }
+
 
             return ({
-                id,
+                id: attendanceRegisterStudentId,
                 regno: otherStudentData.regno,
                 name: `${surname} ${otherNames}`.toString(),
+                surname,
+                otherNames,
+                numberOfClassTaught,
                 ...attendances,
                 classesAttended: studentNumberOfClassAttended,
                 classesAttendedPercentage: studentPercentageOfClassAttended,
@@ -449,6 +452,8 @@ RegisterIDAttendanceRoute.patch("/:registerId/attendance", idValidator("register
             ok: true,
             data: {
                 id: attendanceRegisterStudent.id,
+                surname: attendanceRegisterStudent.student.surname,
+                otherNames: attendanceRegisterStudent.student.otherNames,
                 regno: attendanceRegisterStudent.student.regno,
                 name: `${attendanceRegisterStudent.student.surname} ${attendanceRegisterStudent.student.otherNames}`.toString(),
             },
@@ -484,6 +489,8 @@ RegisterIDAttendanceRoute.patch("/:registerId/attendance", idValidator("register
             ok: true,
             data: {
                 id: attendanceRegisterStudent.id,
+                surname: attendanceRegisterStudent.student.surname,
+                otherNames: attendanceRegisterStudent.student.otherNames,
                 regno: attendanceRegisterStudent.student.regno,
                 name: `${attendanceRegisterStudent.student.surname} ${attendanceRegisterStudent.student.otherNames}`.toString(),
             },
