@@ -3,25 +3,28 @@ import { attendanceRegisterDecisionExpressionTypeChecker, getCurrentSession } fr
 import { $Enums, PrismaClient } from "@prisma/client"
 import RegisterIDRoute from "./[registerId]/index.js"
 
-type ArrangeBy = "title" | "code" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
+type ArrangeBy = "courseTitle" | "courseCode" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
 
 type ArrangeOrder = "asc" | "desc"
 
-type QueryOrderByObject = Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "department" | "faculty">> & {
-    department?: Partial<{
-        name: ArrangeOrder,
-        faculty: {
-            name: ArrangeOrder,
-        }
-    }>
+type QueryOrderByObject = {
+    course: Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "department" | "faculty" | "courseTitle" | "courseCode">> & {
+        title?: ArrangeOrder
+        code?: ArrangeOrder
+        department?: Partial<{
+            name: ArrangeOrder
+            faculty: {
+                name: ArrangeOrder
+            }
+        }>
+    }
+    session?: ArrangeOrder
 }
 
 interface RegisterRequestBody {
     courseId: string
     session: string
     decision: any[]
-    lecturerIds: string[]
-    studentIds: string[]
 }
 
 const RegisterRoute = express.Router()
@@ -32,8 +35,8 @@ RegisterRoute.get("/", async (req, res) => {
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let department = url.searchParams.get("department") || String()
     let faculty = url.searchParams.get("faculty") || String()
-    let code = url.searchParams.get("code") || String()
-    let title = url.searchParams.get("title") || String()
+    let courseCode = url.searchParams.get("courseCode") || String()
+    let courseTitle = url.searchParams.get("courseTitle") || String()
     let level = url.searchParams.get("level") || String()
     let semester = url.searchParams.get("semester") || String()
     let session = url.searchParams.get("session") || String()
@@ -63,7 +66,7 @@ RegisterRoute.get("/", async (req, res) => {
     let searchBy: ArrangeBy = "createdAt"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["title", "code", "session", "semester", "updatedAt", "createdAt", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
+        searchBy = ["courseTitle", "courseCode", "session", "semester", "updatedAt", "createdAt", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -72,34 +75,48 @@ RegisterRoute.get("/", async (req, res) => {
         searchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
     }
 
-    let orderBy: QueryOrderByObject = {}
-    if (searchBy == "department") {
-        orderBy = {
+    let orderBy: QueryOrderByObject = {
+        course: {}
+    }
+    if (searchBy == "session") {
+        orderBy.session = searchOrder
+    } else if (searchBy == "department") {
+        orderBy.course = {
             department: {
                 name: searchOrder
             }
         }
     } else if (searchBy == "faculty") {
-        orderBy = {
+        orderBy.course = {
             department: {
                 faculty: {
                     name: searchOrder
                 }
             }
         }
+    } else if (searchBy == "courseCode") {
+        orderBy.course = {
+            code: searchOrder
+        }
+    } else if (searchBy == "courseTitle") {
+        orderBy.course = {
+            title: searchOrder
+        }
     } else {
-        orderBy[searchBy] = searchOrder
+        orderBy.course = {
+            [searchBy]: searchOrder
+        }
     }
 
     const attendanceRegistersQuery = await prismaClient.attendanceRegister.findMany({
         where: {
             course: {
                 title: {
-                    contains: title,
+                    contains: courseTitle,
                     mode: "insensitive"
                 },
                 code: {
-                    contains: code,
+                    contains: courseCode,
                     mode: "insensitive"
                 },
                 semester: semester ? {
@@ -232,34 +249,9 @@ RegisterRoute.post("/", async (req, res) => {
         return
     }
 
-    if (!body.lecturerIds) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Missing parameter 'lecturerIds'",
-                code: 4003
-            },
-            data: null
-        })
-        return
-    }
-
-    body.studentIds = body.studentIds || []
 
     /**
-     * if (!body.studentIds) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Missing parameter 'studentIds'",
-                code: 4004
-            },
-            data: null
-        })
-        return
-    }
+     * 
      */
 
     let coursesCount = await prismaClient.course.count({
@@ -339,45 +331,11 @@ RegisterRoute.post("/", async (req, res) => {
         return
     }
 
-    let filteredLecturerIds = (await prismaClient.lecturer.findMany({
-        where: {
-            id: {
-                in: body.lecturerIds
-            }
-        },
-        select: {
-            id: true
-        }
-    })).map(({ id }) => ({ lecturerId: id }))
-
-    let filteredStudentIds = (await prismaClient.student.findMany({
-        where: {
-            id: {
-                in: body.studentIds
-            }
-        },
-        select: {
-            id: true
-        }
-    })).map(({ id }) => ({ studentId: id }))
-
     const attendanceRegister = await prismaClient.attendanceRegister.create({
         data: {
             decision: body.decision,
             courseId: body.courseId,
-            session: body.session,
-            attendanceRegisterLecturers: {
-                createMany: {
-                    data: filteredLecturerIds,
-                    skipDuplicates: true
-                }
-            },
-            attendanceRegisterStudents: {
-                createMany: {
-                    data: filteredStudentIds,
-                    skipDuplicates: true
-                }
-            }
+            session: body.session
         },
         select: {
             id: true,
