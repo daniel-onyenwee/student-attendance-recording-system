@@ -1,6 +1,8 @@
 import { getAdminUser, type AdminUserModel } from "@/service";
 import type { LayoutServerLoad } from "./$types";
 import { error } from '@sveltejs/kit';
+import { validate as validateUUID } from "uuid"
+import { capitalizeText } from "@/utils";
 
 export const load = (async ({ url, locals }) => {
     let currentPage = url.pathname
@@ -69,21 +71,22 @@ const getBreadCrumbItems = (currentPage: string) => {
     for (const path of paths) {
         if (!path) continue
 
-        jointPaths = `${jointPaths}/${path}`
-        if (path == "admin") {
-            items.push({ href: "/admin", label: "dashboard" })
-        } else if (path == "record") {
-            items.push({ href: "##", label: "record" })
-        } else if (path == "attendance") {
-            items.push({ href: "##", label: "attendance" })
-        } else if (path == "report") {
-            items.push({ href: "##", label: "report" })
+        if (!validateUUID(path)) {
+            jointPaths = `${jointPaths}/${path}`
+        }
+
+        if (["record", "attendance", "report"].includes(path)) {
+            items.push({ href: "#", label: path })
         } else if (["department", "course", "student", "lecturer", "register"].includes(path)) {
             items.push({ href: jointPaths, label: path + "s" })
         } else if (path == "faculty") {
             items.push({ href: jointPaths, label: "faculties" })
         } else if (path == "class-attendance") {
             items.push({ href: jointPaths, label: "Class attendances" })
+        } else if (path == "class-attendee") {
+            items.push({ href: jointPaths, label: "Class attendees" })
+        } else if (validateUUID(path)) {
+            items.push({ href: jointPaths, label: path })
         } else {
             items.push({ href: jointPaths, label: path })
         }
@@ -93,31 +96,28 @@ const getBreadCrumbItems = (currentPage: string) => {
 }
 
 const getPageTitle = (currentPage: string) => {
-    return currentPage == "/admin"
-        ? "Dashboard"
-        : currentPage.startsWith("/admin/record/faculty")
-            ? "Faculties | Record"
-            : currentPage.startsWith("/admin/record/department")
-                ? "Departments | Record"
-                : currentPage.startsWith("/admin/record/course")
-                    ? "Courses | Record"
-                    : currentPage.startsWith("/admin/record/lecturer")
-                        ? "Lecturers | Record"
-                        : currentPage.startsWith("/admin/record/student")
-                            ? "Students | Record"
-                            : currentPage.startsWith("/admin/report/course")
-                                ? "Course | Report"
-                                : currentPage.startsWith("/admin/report/lecturer")
-                                    ? "Lecturer | Report"
-                                    : currentPage.startsWith("/admin/report/student")
-                                        ? "Student | Report"
-                                        : currentPage.startsWith(
-                                            "/admin/attendance/register"
-                                        )
-                                            ? "Registers | Attendances"
-                                            : currentPage.startsWith(
-                                                "/admin/attendance/class-attendance"
-                                            )
-                                                ? "Class Attendances | Attendance"
-                                                : "Page not found"
+    if (currentPage == "/admin") {
+        return "Dashboard"
+    }
+
+    let [thirdLastItem, secondLastItem, lastItem] = currentPage.split("/").slice(-3)
+
+    if (!lastItem) {
+        return capitalizeText(secondLastItem, true)
+    } else {
+        if (lastItem == "faculty") {
+            lastItem = "faculties"
+        } else {
+            lastItem = lastItem + "s"
+        }
+
+        if (validateUUID(secondLastItem)) {
+            secondLastItem = thirdLastItem || secondLastItem
+        }
+
+        lastItem = lastItem.replace("-", " ")
+        secondLastItem = secondLastItem.replace("-", " ")
+
+        return ` ${capitalizeText(lastItem, true)} | ${capitalizeText(secondLastItem, true)}`
+    }
 }
