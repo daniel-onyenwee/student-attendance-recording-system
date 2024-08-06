@@ -15,6 +15,18 @@ export const AuthenticatedHeadersInit = (accessToken: string, contentType: strin
     }
 }
 
+export function urlFilterAttacher<FilterObjectType extends any>({ url, filter }: { url: URL; filter?: FilterObjectType; }): URL {
+    for (const filterKey in (filter || {})) {
+        let filterValue = Object(filter)[filterKey]
+
+        if (filterValue) {
+            url.searchParams.append(filterKey, filterValue.toString())
+        }
+    }
+
+    return url
+}
+
 export function urlSortAndFilterAttacher<FilterObjectType extends any, SortObjectType extends Partial<{ by: any; ascending: boolean }> | undefined>({ url, filter, sort, count, page }: { url: URL; filter?: FilterObjectType; sort?: SortObjectType; count?: "all" | number; page?: number }): URL {
     if (count == "all") {
         url.searchParams.append("all", String())
@@ -31,7 +43,7 @@ export function urlSortAndFilterAttacher<FilterObjectType extends any, SortObjec
         }
     }
 
-    if (sort && sort.by && sort.ascending) {
+    if (sort && sort.by && typeof sort.ascending == "boolean") {
         url.searchParams.append("by", sort.by.toString())
         url.searchParams.append("order", sort.ascending ? "asc" : "desc")
     }
