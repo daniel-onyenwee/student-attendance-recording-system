@@ -97,6 +97,7 @@
       accessToken: data.session.accessToken,
       filter: filterBy,
       count: 25,
+      sort: sortBy,
       page,
     });
 
@@ -323,7 +324,7 @@
                   >
                   <DropdownMenu.Item
                     on:click={() => deleteRecordDialog.show([lecturer.id])}
-                    class="text-red-600 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
+                    class="text-red-500 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
                   >
                     Delete
                   </DropdownMenu.Item>
@@ -406,14 +407,14 @@
 <SessionAlertDialog bind:this={sessionAlertDialog} />
 <LecturerRecordDialog
   accessToken={data.session.accessToken}
-  on:onSessionError={() => sessionAlertDialog.show()}
-  on:onSuccessful={async () => await initializeData()}
+  on:sessionError={() => sessionAlertDialog.show()}
+  on:successful={async () => await initializeData()}
   bind:this={lecturerRecordDialog}
 />
 <DeleteRecordDialog
   type="LECTURER"
   accessToken={data.session.accessToken}
-  on:onSessionError={() => sessionAlertDialog.show()}
-  on:onSuccessful={onDeleteSuccessful}
+  on:sessionError={() => sessionAlertDialog.show()}
+  on:successful={onDeleteSuccessful}
   bind:this={deleteRecordDialog}
 />

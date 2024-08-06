@@ -14,11 +14,14 @@
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Table from "@/components/ui/table";
   import { getStudents } from "@/service";
+  import { showDialogToast } from "@/utils";
+  import { toast } from "svelte-sonner";
   import type {
     StudentSortByOption,
     StudentModel,
     StudentFilterByOption,
   } from "@/service";
+  import { uploadStudentFace } from "@/service";
   import { formatDate } from "date-fns";
   import { onMount } from "svelte";
   import { sleep } from "@/utils";
@@ -31,6 +34,68 @@
   import { SortByMenu, FilterByMenu } from "@/components/menu";
 
   export let data: PageData;
+
+  function onImageUploaded(studentId: string) {
+    let fileInput = document.createElement("input");
+    fileInput.setAttribute("type", "file");
+    fileInput.setAttribute("accept", "image/jpeg, image/jpg, image/png");
+    fileInput.click();
+
+    fileInput.onchange = async (ev: any) => {
+      var file = ev.target.files[0] as File;
+      if (!file) {
+        showDialogToast("ERROR", "Passport Upload failed", "No image selected");
+        return;
+      }
+      if (
+        file.type != "image/jpeg" &&
+        file.type != "image/jpg" &&
+        file.type != "image/png"
+      ) {
+        showDialogToast(
+          "ERROR",
+          "Passport Upload failed",
+          "Unsupported file type"
+        );
+        return;
+      }
+      if (file.size / 1024 > 100) {
+        showDialogToast(
+          "ERROR",
+          "Passport Upload failed",
+          "Image exceeds 100 KB limit"
+        );
+        return;
+      }
+
+      let toastId = toast.loading("Uploading passport...");
+      try {
+        let serviceResponse = await uploadStudentFace({
+          accessToken: data.session.accessToken,
+          id: studentId,
+          faceImage: new Blob([file], { type: file.type }),
+        });
+
+        toast.dismiss(toastId);
+        if (serviceResponse.error) {
+          showDialogToast(
+            "ERROR",
+            "Passport upload failed",
+            serviceResponse.error.message
+          );
+        } else {
+          showDialogToast(
+            "SUCCESS",
+            "Passport upload successfully",
+            "Student passport uploaded"
+          );
+        }
+      } catch (error) {
+        toast.dismiss(toastId);
+        showDialogToast("ERROR", "Passport upload failed", "Unexpected error");
+      }
+    };
+  }
 
   function onStudentSelected(
     id: string,
@@ -96,6 +161,7 @@
     let serviceResponse = await getStudents({
       accessToken: data.session.accessToken,
       filter: filterBy,
+      sort: sortBy,
       count: 25,
       page,
     });
@@ -265,7 +331,7 @@
           <Table.Head class="min-w-72 max-w-72 truncate">Name</Table.Head>
           <Table.Head class="min-w-48 max-w-48 truncate">Regno</Table.Head>
           <Table.Head class="min-w-36 max-w-36 truncate">Password</Table.Head>
-          <Table.Head class="min-w-24 max-w-24 truncate">Level</Table.Head>
+          <Table.Head class="min-w-24">Level</Table.Head>
           <Table.Head class="min-w-28">Gender</Table.Head>
           <Table.Head class="min-w-[215px] max-w-[215px] truncate">
             Department
@@ -299,7 +365,7 @@
             <Table.Cell class="min-w-44 max-w-44 truncate">
               {student.password}
             </Table.Cell>
-            <Table.Cell class="min-w-28">
+            <Table.Cell class="min-w-24">
               <Badge variant="outline">
                 {student.level.replace("L_", String())}L
               </Badge>
@@ -345,8 +411,13 @@
                     >Edit</DropdownMenu.Item
                   >
                   <DropdownMenu.Item
+                    on:click={() => onImageUploaded(student.id)}
+                  >
+                    Upload passport
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
                     on:click={() => deleteRecordDialog.show([student.id])}
-                    class="text-red-600 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
+                    class="text-red-500 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
                   >
                     Delete
                   </DropdownMenu.Item>
@@ -431,14 +502,14 @@
 <SessionAlertDialog bind:this={sessionAlertDialog} />
 <StudentRecordDialog
   accessToken={data.session.accessToken}
-  on:onSessionError={() => sessionAlertDialog.show()}
-  on:onSuccessful={async () => await initializeData()}
+  on:sessionError={() => sessionAlertDialog.show()}
+  on:successful={async () => await initializeData()}
   bind:this={studentRecordDialog}
 />
 <DeleteRecordDialog
   type="STUDENT"
   accessToken={data.session.accessToken}
-  on:onSessionError={() => sessionAlertDialog.show()}
-  on:onSuccessful={onDeleteSuccessful}
+  on:sessionError={() => sessionAlertDialog.show()}
+  on:successful={onDeleteSuccessful}
   bind:this={deleteRecordDialog}
 />
