@@ -175,8 +175,6 @@ RegisterIDAttendanceRoute.get("/:registerId/attendance", idValidator("registerId
         attendanceRegisterStudents
     } = attendanceRegister
 
-    let attendanceRegisterStudentIds = attendanceRegisterStudents.map(({ id }) => id)
-
     let classAttendances = await prismaClient.classAttendance.findMany({
         where: {
             attendanceRegisterId: registerId,
