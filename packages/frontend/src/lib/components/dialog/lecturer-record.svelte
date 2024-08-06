@@ -35,6 +35,17 @@
       lecturerData.password || faker.internet.password({ memorable: true });
 
     open = true;
+
+    getDepartments({ accessToken, count: "all" })
+      .then(({ data }) => {
+        departments = data || [];
+      })
+      .catch(() => {
+        departments = [];
+      })
+      .finally(() => {
+        departmentsLoaded = true;
+      });
   }
 
   export function close() {
@@ -45,6 +56,8 @@
   function internalClose() {
     errorMessage = {};
     lecturerData = {};
+    departments = [];
+    departmentsLoaded = false;
   }
 
   function onGenderSelected(currentValue: string) {
@@ -55,21 +68,6 @@
   function onDepartmentSelected(departmentName: string) {
     lecturerData.department = departmentName;
     departmentPopoverOpen = false;
-    departmentsLoaded = false;
-    departments = [];
-  }
-
-  async function onDepartmentPopoverOpened(open?: boolean) {
-    if (open) {
-      try {
-        departments =
-          (await getDepartments({ accessToken, count: "all" })).data || [];
-      } catch (error) {
-        departments = [];
-      } finally {
-        departmentsLoaded = true;
-      }
-    }
   }
 
   function closeAndFocusTrigger(triggerId: string) {
@@ -135,7 +133,7 @@
           serviceRequest.error.code < 1004
         ) {
           close();
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else if (serviceRequest.error.code == 2006) {
           errorMessage.username = serviceRequest.error.message;
         } else if (serviceRequest.error.code == 3006) {
@@ -155,10 +153,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `Lecturer successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
@@ -186,7 +184,7 @@
       : `${dialogMode == "CREATE" ? "Create" : "Edit"} lecturer`;
   $: dialogDescription =
     dialogMode == "VIEW"
-      ? "Complete information about the lecturer"
+      ? "Complete information about the lecturer."
       : `${
           dialogMode == "CREATE"
             ? "Create a new lecturer here. Click create when you're done."
@@ -227,7 +225,7 @@
             bind:value={lecturerData.surname}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.surname &&
+            class="text-sm font-medium text-red-500 {!errorMessage.surname &&
               'hidden'}"
           >
             {errorMessage.surname}
@@ -251,7 +249,7 @@
             bind:value={lecturerData.otherNames}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.otherNames &&
+            class="text-sm font-medium text-red-500 {!errorMessage.otherNames &&
               'hidden'}"
           >
             {errorMessage.otherNames}
@@ -259,32 +257,30 @@
         {/if}
       </div>
       <div class="grid gap-2">
-        <Label for="department">Department</Label>
+        <Label>Department</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="department"
           >
             {lecturerData.department}
           </span>
         {:else}
-          <Popover.Root
-            bind:open={departmentPopoverOpen}
-            onOpenChange={(open) => onDepartmentPopoverOpened(open)}
-            let:ids
-          >
+          <Popover.Root bind:open={departmentPopoverOpen} let:ids>
             <Popover.Trigger asChild let:builder>
               <Button
                 builders={[builder]}
                 variant="outline"
                 role="combobox"
-                id="department"
                 aria-expanded={departmentPopoverOpen}
                 class="w-full justify-between font-normal {lecturerData.department ==
                   undefined && 'text-muted-foreground'}"
               >
                 {#if lecturerData.department}
-                  {lecturerData.department}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {lecturerData.department}
+                    </p>
+                  </div>
                 {:else}
                   Select department
                 {/if}
@@ -297,7 +293,7 @@
                 <Command.List>
                   {#if departmentsLoaded}
                     <Command.Empty>No department found.</Command.Empty>
-                    <Command.Group>
+                    <Command.Group class="overflow-auto max-h-52">
                       {#each departments as department}
                         <Command.Item
                           onSelect={(currentValue) => {
@@ -320,7 +316,7 @@
                     </Command.Group>
                   {:else}
                     <Command.Loading class="py-6 text-center text-sm">
-                      Loading departments..
+                      Loading departments...
                     </Command.Loading>
                   {/if}
                 </Command.List>
@@ -328,7 +324,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.department &&
+            class="text-sm font-medium text-red-500 {!errorMessage.department &&
               'hidden'}"
           >
             {errorMessage.department}
@@ -347,11 +343,10 @@
         </div>
       {/if}
       <div class="grid gap-2">
-        <Label for="gender">Gender</Label>
+        <Label>Gender</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="gender"
           >
             {lecturerData.gender}
           </span>
@@ -362,13 +357,16 @@
                 builders={[builder]}
                 variant="outline"
                 role="combobox"
-                id="gender"
                 aria-expanded={genderPopoverOpen}
                 class="w-full justify-between font-normal {lecturerData.gender ==
                   undefined && 'text-muted-foreground'}"
               >
                 {#if lecturerData.gender}
-                  {lecturerData.gender}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {lecturerData.gender}
+                    </p>
+                  </div>
                 {:else}
                   Select gender
                 {/if}
@@ -380,7 +378,7 @@
                 <Command.Input placeholder="Search semester..." />
                 <Command.List>
                   <Command.Empty>No gender found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each ["MALE", "FEMALE"] as gender}
                       <Command.Item
                         onSelect={(currentValue) => {
@@ -404,7 +402,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.gender &&
+            class="text-sm font-medium text-red-500 {!errorMessage.gender &&
               'hidden'}"
           >
             {errorMessage.gender}
@@ -428,7 +426,7 @@
             bind:value={lecturerData.username}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.username &&
+            class="text-sm font-medium text-red-500 {!errorMessage.username &&
               'hidden'}"
           >
             {errorMessage.username}
@@ -452,7 +450,7 @@
             bind:value={lecturerData.password}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.password &&
+            class="text-sm font-medium text-red-500 {!errorMessage.password &&
               'hidden'}"
           >
             {errorMessage.password}

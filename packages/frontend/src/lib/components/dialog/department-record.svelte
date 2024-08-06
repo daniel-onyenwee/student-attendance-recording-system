@@ -27,6 +27,17 @@
       departmentData = structuredClone(data);
     }
     open = true;
+
+    getFaculties({ accessToken, count: "all" })
+      .then(({ data }) => {
+        faculties = data || [];
+      })
+      .catch(() => {
+        faculties = [];
+      })
+      .finally(() => {
+        facultiesLoaded = true;
+      });
   }
 
   export function close() {
@@ -37,6 +48,8 @@
   function internalClose() {
     errorMessage = {};
     departmentData = {};
+    faculties = [];
+    facultiesLoaded = false;
   }
 
   function convertNumToLevels(levelNum: number): string {
@@ -59,21 +72,6 @@
   function onFacultySelected(facultyName: string) {
     departmentData.faculty = facultyName;
     facultyPopoverOpen = false;
-    facultiesLoaded = false;
-    faculties = [];
-  }
-
-  async function onFacultyPopoverOpened(open?: boolean) {
-    if (open) {
-      try {
-        faculties =
-          (await getFaculties({ accessToken, count: "all" })).data || [];
-      } catch (error) {
-        faculties = [];
-      } finally {
-        facultiesLoaded = true;
-      }
-    }
   }
 
   function closeAndFocusTrigger(triggerId: string) {
@@ -136,7 +134,7 @@
           serviceRequest.error.code < 1004
         ) {
           close();
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else if (serviceRequest.error.code == 3002) {
           errorMessage.faculty = serviceRequest.error.message;
         } else if (serviceRequest.error.code == 3005) {
@@ -154,10 +152,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `Department successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch (error) {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
@@ -183,7 +181,7 @@
       : `${dialogMode == "CREATE" ? "Create" : "Edit"} department`;
   $: dialogDescription =
     dialogMode == "VIEW"
-      ? "Complete information about the department"
+      ? "Complete information about the department."
       : `${
           dialogMode == "CREATE"
             ? "Create a new department here. Click create when you're done."
@@ -227,7 +225,7 @@
             bind:value={departmentData.name}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
+            class="text-sm font-medium text-red-500 {!errorMessage.name &&
               'hidden'}"
           >
             {errorMessage.name}
@@ -235,20 +233,15 @@
         {/if}
       </div>
       <div class="grid gap-2">
-        <Label for="faculty">Faculty</Label>
+        <Label>Faculty</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="faculty"
           >
             {departmentData.faculty}
           </span>
         {:else}
-          <Popover.Root
-            bind:open={facultyPopoverOpen}
-            onOpenChange={(open) => onFacultyPopoverOpened(open)}
-            let:ids
-          >
+          <Popover.Root bind:open={facultyPopoverOpen} let:ids>
             <Popover.Trigger asChild let:builder>
               <Button
                 builders={[builder]}
@@ -259,7 +252,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if departmentData.faculty}
-                  {departmentData.faculty}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {departmentData.faculty}
+                    </p>
+                  </div>
                 {:else}
                   Select faculty
                 {/if}
@@ -272,7 +269,7 @@
                 <Command.List class="max-h-52">
                   {#if facultiesLoaded}
                     <Command.Empty>No faculty found.</Command.Empty>
-                    <Command.Group>
+                    <Command.Group class="overflow-auto max-h-52">
                       {#each faculties as faculty}
                         <Command.Item
                           onSelect={(currentValue) => {
@@ -295,7 +292,7 @@
                     </Command.Group>
                   {:else}
                     <Command.Loading class="py-6 text-center text-sm">
-                      Loading faculties..
+                      Loading faculties...
                     </Command.Loading>
                   {/if}
                 </Command.List>
@@ -303,7 +300,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.faculty &&
+            class="text-sm font-medium text-red-500 {!errorMessage.faculty &&
               'hidden'}"
           >
             {errorMessage.faculty}
@@ -311,11 +308,10 @@
         {/if}
       </div>
       <div class="grid gap-2">
-        <Label for="levels">Levels</Label>
+        <Label>Levels</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="levels"
           >
             {selectedLevels}
           </span>
@@ -331,7 +327,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if selectedLevels}
-                  {selectedLevels}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {selectedLevels}
+                    </p>
+                  </div>
                 {:else}
                   Select levels
                 {/if}
@@ -340,10 +340,10 @@
             </Popover.Trigger>
             <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
               <Command.Root loop>
-                <Command.Input placeholder="Search levels..." />
+                <Command.Input placeholder="Search level..." />
                 <Command.List class="max-h-52">
                   <Command.Empty>No levels found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each { length: 10 } as _, i}
                       <Command.Item
                         onSelect={() => {
@@ -368,7 +368,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.levels &&
+            class="text-sm font-medium text-red-500 {!errorMessage.levels &&
               'hidden'}"
           >
             {errorMessage.levels}

@@ -27,6 +27,17 @@
       courseData = structuredClone(data);
     }
     open = true;
+
+    getDepartments({ accessToken, count: "all" })
+      .then(({ data }) => {
+        departments = data || [];
+      })
+      .catch(() => {
+        departments = [];
+      })
+      .finally(() => {
+        departmentsLoaded = true;
+      });
   }
 
   export function close() {
@@ -37,6 +48,8 @@
   function internalClose() {
     errorMessage = {};
     courseData = {};
+    departments = [];
+    departmentsLoaded = false;
   }
 
   function onSemesterSelected(currentValue: string) {
@@ -52,21 +65,6 @@
   function onDepartmentSelected(departmentName: string) {
     courseData.department = departmentName;
     departmentPopoverOpen = false;
-    departmentsLoaded = false;
-    departments = [];
-  }
-
-  async function onDepartmentPopoverOpened(open?: boolean) {
-    if (open) {
-      try {
-        departments =
-          (await getDepartments({ accessToken, count: "all" })).data || [];
-      } catch (error) {
-        departments = [];
-      } finally {
-        departmentsLoaded = true;
-      }
-    }
   }
 
   function closeAndFocusTrigger(triggerId: string) {
@@ -127,7 +125,7 @@
           serviceRequest.error.code < 1004
         ) {
           close();
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else if (serviceRequest.error.code == 3006) {
           errorMessage.department = serviceRequest.error.message;
         } else if (
@@ -154,10 +152,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `Course successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
@@ -184,7 +182,7 @@
       : `${dialogMode == "CREATE" ? "Create" : "Edit"} course`;
   $: dialogDescription =
     dialogMode == "VIEW"
-      ? "Complete information about the course"
+      ? "Complete information about the course."
       : `${
           dialogMode == "CREATE"
             ? "Create a new course here. Click create when you're done."
@@ -225,7 +223,7 @@
             bind:value={courseData.title}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.title &&
+            class="text-sm font-medium text-red-500 {!errorMessage.title &&
               'hidden'}"
           >
             {errorMessage.title}
@@ -249,7 +247,7 @@
             bind:value={courseData.code}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.code &&
+            class="text-sm font-medium text-red-500 {!errorMessage.code &&
               'hidden'}"
           >
             {errorMessage.code}
@@ -266,11 +264,7 @@
             {courseData.department}
           </span>
         {:else}
-          <Popover.Root
-            bind:open={departmentPopoverOpen}
-            onOpenChange={(open) => onDepartmentPopoverOpened(open)}
-            let:ids
-          >
+          <Popover.Root bind:open={departmentPopoverOpen} let:ids>
             <Popover.Trigger asChild let:builder>
               <Button
                 builders={[builder]}
@@ -281,7 +275,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if courseData.department}
-                  {courseData.department}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {courseData.department}
+                    </p>
+                  </div>
                 {:else}
                   Select department
                 {/if}
@@ -294,7 +292,7 @@
                 <Command.List>
                   {#if departmentsLoaded}
                     <Command.Empty>No department found.</Command.Empty>
-                    <Command.Group>
+                    <Command.Group class="overflow-auto max-h-52">
                       {#each departments as department}
                         <Command.Item
                           onSelect={(currentValue) => {
@@ -317,7 +315,7 @@
                     </Command.Group>
                   {:else}
                     <Command.Loading class="py-6 text-center text-sm">
-                      Loading departments..
+                      Loading departments...
                     </Command.Loading>
                   {/if}
                 </Command.List>
@@ -325,7 +323,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.department &&
+            class="text-sm font-medium text-red-500 {!errorMessage.department &&
               'hidden'}"
           >
             {errorMessage.department}
@@ -364,7 +362,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if courseData.semester}
-                  {courseData.semester}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {courseData.semester}
+                    </p>
+                  </div>
                 {:else}
                   Select semester
                 {/if}
@@ -376,7 +378,7 @@
                 <Command.Input placeholder="Search semester..." />
                 <Command.List>
                   <Command.Empty>No semester found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each ["FIRST", "SECOND"] as semester}
                       <Command.Item
                         onSelect={(currentValue) => {
@@ -401,7 +403,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.semester &&
+            class="text-sm font-medium text-red-500 {!errorMessage.semester &&
               'hidden'}"
           >
             {errorMessage.semester}
@@ -429,7 +431,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if courseData.level}
-                  {courseData.level.replace("L_", String())}L
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {courseData.level.replace("L_", String())}L
+                    </p>
+                  </div>
                 {:else}
                   Select level
                 {/if}
@@ -441,7 +447,7 @@
                 <Command.Input placeholder="Search level..." />
                 <Command.List>
                   <Command.Empty>No level found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each { length: 10 } as _, i}
                       <Command.Item
                         onSelect={(currentValue) => {
@@ -466,7 +472,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.level &&
+            class="text-sm font-medium text-red-500 {!errorMessage.level &&
               'hidden'}"
           >
             {errorMessage.level}

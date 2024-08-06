@@ -2,17 +2,30 @@
   import { mediaQuery } from "svelte-legos";
   import { LoaderCircle } from "lucide-svelte/icons";
   import { showDialogToast } from "@/utils";
-  import { deleteAdminUser, getSession } from "@/service";
+  import { deleteAdminUser } from "@/service";
   import * as Dialog from "@/components/ui/dialog/index.js";
   import * as Drawer from "@/components/ui/drawer/index.js";
   import { Button } from "@/components/ui/button/index.js";
-  import { goto } from "$app/navigation";
   import { Input } from "@/components/ui/input/index.js";
   import { Label } from "@/components/ui/label/index.js";
   import { createEventDispatcher } from "svelte";
 
-  export let show: boolean = false;
   export let userPassword: string;
+  export let accessToken: string;
+
+  export function show() {
+    open = true;
+  }
+
+  export function close() {
+    internalClose();
+    open = false;
+  }
+
+  function internalClose() {
+    errorMessage = "";
+    password = "";
+  }
 
   async function onDelete() {
     requestOngoing = true;
@@ -32,60 +45,50 @@
     }
 
     try {
-      let session = await getSession();
-
-      if (!session.data) {
-        requestOngoing = false;
-        show = false;
-        dispatch("sessionError");
-        return;
-      }
-
       let { error } = await deleteAdminUser({
-        accessToken: session.data.accessToken,
+        accessToken: accessToken,
       });
 
       if (error) {
         requestOngoing = false;
-        show = false;
+        close();
 
-        showDialogToast("ERROR", "Request failed", error.message);
+        if (error.code >= 1001 && error.code < 1004) {
+          dispatch("sessionError");
+          return;
+        } else {
+          showDialogToast("ERROR", "Request failed", error.message);
+        }
         return;
       }
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
-        "Account successfully deleted",
-        async () => {
-          await goto("/login");
-        }
+        "Request successful",
+        "Account successfully deleted"
       );
+      dispatch("successful");
     } catch (error) {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
 
     requestOngoing = false;
-    show = false;
+    close();
   }
 
   let requestOngoing: boolean = false;
   let isDesktop = mediaQuery("(min-width: 768px)");
   let dispatch = createEventDispatcher();
-  let errorMessage: string = "";
+  let errorMessage: string;
   let password: string;
-
-  $: if (show != false) {
-    errorMessage = "";
-    password = "";
-  }
+  let open: boolean = false;
 </script>
 
 {#if $isDesktop}
   <Dialog.Root
     closeOnEscape={!requestOngoing}
     closeOnOutsideClick={!requestOngoing}
-    bind:open={show}
+    bind:open
   >
     <Dialog.Content class="sm:max-w-[425px]">
       <Dialog.Header>
@@ -100,7 +103,7 @@
           <Label for="password">Password</Label>
           <Input type="password" id="password" bind:value={password} />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage && 'hidden'}"
+            class="text-sm font-medium text-red-500 {!errorMessage && 'hidden'}"
           >
             {errorMessage}
           </p>
@@ -122,7 +125,7 @@
   <Drawer.Root
     closeOnEscape={!requestOngoing}
     closeOnOutsideClick={!requestOngoing}
-    bind:open={show}
+    bind:open
   >
     <Drawer.Content>
       <Drawer.Header class="text-left">
@@ -137,7 +140,7 @@
           <Label for="password">Password</Label>
           <Input type="password" id="password" bind:value={password} />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage && 'hidden'}"
+            class="text-sm font-medium text-red-500 {!errorMessage && 'hidden'}"
           >
             {errorMessage}
           </p>
