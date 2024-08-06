@@ -41,3 +41,5 @@ export type Level = `L_${LevelNumber}`
 export type Semester = "FIRST" | "SECOND"
 
 export type Gender = "MALE" | "FEMALE"
+
+export type ClassAttendanceStatus = "ONGOING" | "REVIEWING" | "COMPLETED"
