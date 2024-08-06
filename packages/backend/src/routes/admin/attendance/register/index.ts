@@ -8,7 +8,9 @@ type ArrangeBy = "courseTitle" | "courseCode" | "session" | "semester" | "update
 type ArrangeOrder = "asc" | "desc"
 
 type QueryOrderByObject = {
-    course: Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "department" | "faculty" | "courseTitle" | "courseCode">> & {
+    createdAt?: ArrangeOrder
+    updatedAt?: ArrangeOrder
+    course: Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "updatedAt" | "createdAt" | "department" | "faculty" | "courseTitle" | "courseCode">> & {
         title?: ArrangeOrder
         code?: ArrangeOrder
         department?: Partial<{
@@ -78,8 +80,9 @@ RegisterRoute.get("/", async (req, res) => {
     let orderBy: QueryOrderByObject = {
         course: {}
     }
-    if (searchBy == "session") {
-        orderBy.session = searchOrder
+    if (searchBy == "session" || searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).course
+        orderBy[searchBy] = searchOrder
     } else if (searchBy == "department") {
         orderBy.course = {
             department: {
@@ -249,10 +252,6 @@ RegisterRoute.post("/", async (req, res) => {
         return
     }
 
-
-    /**
-     * 
-     */
 
     let coursesCount = await prismaClient.course.count({
         where: {

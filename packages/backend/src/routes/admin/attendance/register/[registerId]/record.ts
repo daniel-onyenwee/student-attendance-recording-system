@@ -30,7 +30,9 @@ type otherNamesQueryOrderByObject<T extends "Lecturer" | "Student" = "Lecturer">
 
 type QueryOrderByObject<T extends "Lecturer" | "Student" = "Lecturer"> = (T extends "Lecturer" ?
     {
-        lecturer: Partial<Omit<Record<ArrangeBy<T>, ArrangeOrder>, "department" | "name" | "faculty">> & {
+        createdAt?: ArrangeOrder
+        updatedAt?: ArrangeOrder
+        lecturer: Partial<Omit<Record<ArrangeBy<T>, ArrangeOrder>, "department" | "name" | "faculty" | "createdAt" | "updatedAt">> & {
             department?: Partial<{
                 name: ArrangeOrder,
                 faculty: {
@@ -40,6 +42,8 @@ type QueryOrderByObject<T extends "Lecturer" | "Student" = "Lecturer"> = (T exte
         }
     } :
     {
+        createdAt?: ArrangeOrder
+        updatedAt?: ArrangeOrder
         student: Partial<Omit<Record<ArrangeBy<T>, ArrangeOrder>, "department" | "name" | "faculty">> & {
             department?: Partial<{
                 name: ArrangeOrder,
@@ -142,6 +146,9 @@ RegisterIDRecordRoute.get("/:registerId/lecturer", idValidator("registerId"), as
                 }
             }
         ]
+    } else if (searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).lecturer
+        orderBy[searchBy] = searchOrder
     } else {
         orderBy.lecturer = {
             [searchBy]: searchOrder
@@ -457,6 +464,9 @@ RegisterIDRecordRoute.get("/:registerId/student", idValidator("registerId"), asy
                 }
             }
         ]
+    } else if (searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).student
+        orderBy[searchBy] = searchOrder
     } else {
         orderBy.student = {
             [searchBy]: searchOrder
