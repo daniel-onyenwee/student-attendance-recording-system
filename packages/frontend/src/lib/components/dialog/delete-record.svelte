@@ -75,7 +75,7 @@
           serviceRequest.error.code >= 1001 &&
           serviceRequest.error.code < 1004
         ) {
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else {
           showDialogToast(
             "ERROR",
@@ -88,10 +88,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `${capitalizeText(dialogTitle())} successfully deleted`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch (error) {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }

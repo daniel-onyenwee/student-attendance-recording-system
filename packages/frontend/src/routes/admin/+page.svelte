@@ -1,7 +1,373 @@
 <script lang="ts">
   import type { PageData } from "./$types";
+  import { Button } from "@/components/ui/button";
+  import * as Card from "@/components/ui/card";
+  import { Skeleton } from "@/components/ui/skeleton";
+  import { Badge } from "@/components/ui/badge";
+  import * as Table from "@/components/ui/table";
+  import { getClassAttendances, statsClassAttendances } from "@/service";
+  import type {
+    ClassAttendanceSortByOption,
+    ClassAttendanceModel,
+  } from "@/service";
+  import { formatDate } from "date-fns";
+  import { onMount } from "svelte";
+  import SortWorker from "@/web-workers/sort?worker";
+  import { SessionAlertDialog } from "@/components/dialog";
+  import { Progress } from "@/components/ui/progress";
+  import numbro from "numbro";
 
   export let data: PageData;
+
+  async function loadStats() {
+    let classAttendanceCountServiceResponse = await statsClassAttendances({
+      accessToken: data.session.accessToken,
+    });
+    if (!classAttendanceCountServiceResponse.data) {
+      return {
+        classAttendanceCount: 0,
+        todayClassAttendanceCount: 0,
+        ongoingClassAttendanceCount: 0,
+      };
+    }
+
+    let todayClassAttendanceCountServiceResponse = await statsClassAttendances({
+      accessToken: data.session.accessToken,
+      filter: {
+        date: new Date().toISOString(),
+      },
+    });
+    if (!todayClassAttendanceCountServiceResponse.data) {
+      return {
+        classAttendanceCount: classAttendanceCountServiceResponse.data.count,
+        todayClassAttendanceCount: 0,
+        ongoingClassAttendanceCount: 0,
+      };
+    }
+
+    let ongoingClassAttendanceCountServiceResponse =
+      await statsClassAttendances({
+        accessToken: data.session.accessToken,
+        filter: {
+          date: new Date().toISOString(),
+          status: "ONGOING",
+        },
+      });
+    if (!ongoingClassAttendanceCountServiceResponse.data) {
+      return {
+        classAttendanceCount: classAttendanceCountServiceResponse.data.count,
+        todayClassAttendanceCount:
+          todayClassAttendanceCountServiceResponse.data.count,
+        ongoingClassAttendanceCount: 0,
+      };
+    }
+
+    return {
+      classAttendanceCount: classAttendanceCountServiceResponse.data.count,
+      todayClassAttendanceCount:
+        todayClassAttendanceCountServiceResponse.data.count,
+      ongoingClassAttendanceCount:
+        ongoingClassAttendanceCountServiceResponse.data.count,
+    };
+  }
+
+  async function loadData() {
+    let serviceResponse = await getClassAttendances({
+      accessToken: data.session.accessToken,
+      sort: sortBy,
+      count: 5,
+      page: 1,
+    });
+
+    if (serviceResponse.data) {
+      classAttendances = [...classAttendances, ...serviceResponse.data];
+      return;
+    } else {
+      throw new Error(JSON.stringify(serviceResponse.error));
+    }
+  }
+
+  async function initializeData() {
+    classAttendances = [];
+    initialDataLoaded = false;
+    try {
+      await loadData();
+      stats = await loadStats();
+      initialDataLoaded = true;
+    } catch (error) {
+      sessionAlertDialog.show();
+    }
+  }
+
+  let sortBy: ClassAttendanceSortByOption = {
+    by: "createdAt",
+    ascending: false,
+  };
+  let classAttendances: ClassAttendanceModel[] = [];
+  let initialDataLoaded = false;
+  let stats: {
+    classAttendanceCount: number;
+    todayClassAttendanceCount: number;
+    ongoingClassAttendanceCount: number;
+  } = {
+    classAttendanceCount: 0,
+    todayClassAttendanceCount: 0,
+    ongoingClassAttendanceCount: 0,
+  };
+  let sortWorker: Worker;
+  let sessionAlertDialog: SessionAlertDialog;
+  let numberFormat = new Intl.NumberFormat();
+
+  onMount(async () => {
+    let url = new URL(window.location.href);
+
+    sortWorker = new SortWorker();
+    sortWorker.addEventListener("message", (e) => {
+      const { type, payload, mode } = e.data;
+      if (type == "CLASS_ATTENDANCE" && mode == "RESPONSE") {
+        classAttendances = payload;
+      }
+    });
+
+    await initializeData();
+  });
 </script>
 
-<h1>Admin dashboard</h1>
+<div
+  class="grid gap-3 mb-3 md:mb-8 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+>
+  <Card.Root class="col-span-1 md:col-span-2 lg:col-span-1">
+    <Card.Header class="pb-2">
+      <Card.Title>Welcome Back</Card.Title>
+      <Card.Description class="max-w-lg text-balance leading-relaxed">
+        Good morning {data.user.username}, already for a seamless experience
+      </Card.Description>
+    </Card.Header>
+    <Card.Footer>
+      <Button href="./admin/attendance/class-attendance?create">
+        Create Class attendance
+      </Button>
+    </Card.Footer>
+  </Card.Root>
+  {#if initialDataLoaded}
+    <Card.Root>
+      <Card.Header class="pb-2">
+        <Card.Description>Total class attendances</Card.Description>
+        <Card.Title class="text-4xl">
+          {numberFormat.format(stats.classAttendanceCount)}
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <div class="text-muted-foreground text-xs">
+          {numberFormat.format(stats.todayClassAttendanceCount)} added today
+        </div>
+      </Card.Content>
+      <Card.Footer>
+        <Progress
+          value={(stats.todayClassAttendanceCount /
+            (stats.classAttendanceCount || 1)) *
+            100}
+        />
+      </Card.Footer>
+    </Card.Root>
+    <Card.Root>
+      <Card.Header class="pb-2">
+        <Card.Description>Ongoing class attendances</Card.Description>
+        <Card.Title class="text-4xl">
+          {numberFormat.format(stats.ongoingClassAttendanceCount)}
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <div class="text-muted-foreground text-xs">
+          {numbro(
+            stats.ongoingClassAttendanceCount /
+              (stats.todayClassAttendanceCount || 1)
+          ).format({ output: "percent", mantissa: 2 })} of today class attendances
+        </div>
+      </Card.Content>
+      <Card.Footer>
+        <Progress
+          value={(stats.ongoingClassAttendanceCount /
+            (stats.todayClassAttendanceCount || 1)) *
+            100}
+        />
+      </Card.Footer>
+    </Card.Root>
+  {:else}
+    {#each { length: 2 } as i}
+      <Card.Root>
+        <Card.Header class="pb-2">
+          <Card.Description>
+            {i == 0 ? "Total class attendances" : "Ongoing class attendances"}
+          </Card.Description>
+          <Card.Title class="text-4xl">
+            <Skeleton class="w-full h-9" />
+          </Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div class="text-muted-foreground text-xs">
+            <Skeleton class="w-full h-4" />
+          </div>
+        </Card.Content>
+        <Card.Footer>
+          <Skeleton class="w-full h-4" />
+        </Card.Footer>
+      </Card.Root>
+    {/each}
+  {/if}
+</div>
+<Card.Root>
+  <Card.Header class="px-7">
+    <Card.Title>Class attendances</Card.Title>
+    <Card.Description>Recent class attendances</Card.Description>
+  </Card.Header>
+  <Card.Content>
+    <Table.Root>
+      <Table.Header>
+        <Table.Row>
+          <Table.Head class="min-w-72 max-w-72 truncate">
+            Course title
+          </Table.Head>
+          <Table.Head class="min-w-28 max-w-28 truncate">
+            Course code
+          </Table.Head>
+          <Table.Head class="min-w-72 max-w-72 truncate">
+            Lecturer name
+          </Table.Head>
+          <Table.Head class="min-w-[115px]">Date</Table.Head>
+          <Table.Head class="min-w-28">Start time</Table.Head>
+          <Table.Head class="min-w-28">End time</Table.Head>
+          <Table.Head class="min-w-32">Status</Table.Head>
+          <Table.Head class="min-w-28 max-w-28 truncate">Semester</Table.Head>
+          <Table.Head class="min-w-24 max-w-24 truncate">Level</Table.Head>
+          <Table.Head class="min-w-28 max-w-28 truncate">Session</Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Department
+          </Table.Head>
+          <Table.Head class="min-w-[215px] max-w-[215px] truncate">
+            Faculty
+          </Table.Head>
+          <Table.Head class="min-w-[115px]">Created at</Table.Head>
+          <Table.Head class="min-w-[115px]">Submitted at</Table.Head>
+          <Table.Head class="min-w-[115px]">Modified at</Table.Head>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body class={initialDataLoaded ? "visible" : "hidden"}>
+        {#each classAttendances as classAttendance, _ (classAttendance.id)}
+          <Table.Row>
+            <Table.Cell class="min-w-72 max-w-72 truncate">
+              {classAttendance.courseTitle}
+            </Table.Cell>
+            <Table.Cell class="min-w-28 max-w-28 truncate">
+              {classAttendance.courseCode}
+            </Table.Cell>
+            <Table.Cell class="min-w-72 max-w-72 truncate">
+              {classAttendance.lecturerName}
+            </Table.Cell>
+            <Table.Cell class="min-w-[115px]">
+              {formatDate(classAttendance.date, "yyy-LL-dd")}
+            </Table.Cell>
+            <Table.Cell class="min-w-28">
+              {formatDate(classAttendance.startTime, "hh:mm aaa")}
+            </Table.Cell>
+            <Table.Cell class="min-w-28">
+              {formatDate(classAttendance.endTime, "hh:mm aaa")}
+            </Table.Cell>
+            <Table.Cell class="min-w-32">
+              {#if classAttendance.status == "COMPLETED"}
+                <Badge
+                  variant="outline"
+                  class="text-green-500 border-green-500"
+                >
+                  {classAttendance.status}
+                </Badge>
+              {:else if classAttendance.status == "ONGOING"}
+                <Badge variant="outline" class="text-blue-500 border-blue-500">
+                  {classAttendance.status}
+                </Badge>
+              {:else}
+                <Badge
+                  variant="outline"
+                  class="text-amber-500 border-amber-500"
+                >
+                  {classAttendance.status}
+                </Badge>
+              {/if}
+            </Table.Cell>
+            <Table.Cell class="min-w-28 max-w-28 truncate">
+              <Badge variant="default">
+                {classAttendance.semester}
+              </Badge>
+            </Table.Cell>
+            <Table.Cell class="min-w-24 max-w-24 truncate">
+              <Badge variant="outline">
+                {classAttendance.level.replace("L_", String())}L
+              </Badge>
+            </Table.Cell>
+            <Table.Cell class="min-w-28 max-w-28 truncate">
+              {classAttendance.session}
+            </Table.Cell>
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
+              {classAttendance.department}
+            </Table.Cell>
+            <Table.Cell class="min-w-[215px] max-w-[215px] truncate">
+              {classAttendance.faculty}
+            </Table.Cell>
+            <Table.Cell class="min-w-[115px]">
+              {formatDate(classAttendance.createdAt, "yyy-LL-dd")}
+            </Table.Cell>
+            <Table.Cell class="min-w-[115px]">
+              {#if classAttendance.submittedAt}
+                {formatDate(classAttendance.submittedAt, "yyy-LL-dd")}
+              {:else}
+                -------------
+              {/if}
+            </Table.Cell>
+            <Table.Cell class="min-w-[115px]">
+              {formatDate(classAttendance.updatedAt, "yyy-LL-dd")}
+            </Table.Cell>
+          </Table.Row>
+        {/each}
+      </Table.Body>
+      <Table.Body class={!initialDataLoaded ? "visible" : "hidden"}>
+        {#each { length: 3 } as _}
+          <Table.Row>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+            <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  </Card.Content>
+  {#if classAttendances.length == 0 && initialDataLoaded}
+    <div
+      class="w-full px-7 py-6 pt-0 flex justify-center text-sm text-muted-foreground font-semibold italic"
+    >
+      No class attendance found
+    </div>
+  {/if}
+  <Card.Footer class="justify-center border-t p-4">
+    <Skeleton class="h-7 w-[92px] {initialDataLoaded && 'hidden'}" />
+    <Button
+      size="sm"
+      variant="ghost"
+      href="./admin/attendance/class-attendance"
+      class="gap-1 {!initialDataLoaded && 'hidden'}"
+    >
+      See more
+    </Button>
+  </Card.Footer>
+</Card.Root>

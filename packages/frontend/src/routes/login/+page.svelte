@@ -62,7 +62,7 @@
         return;
       }
 
-      toast.success("Request successfully", {
+      toast.success("Request successful", {
         description: "Login successfully",
       });
 
@@ -98,7 +98,7 @@
         <div class="grid w-full items-center gap-4">
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.type && "text-red-600"}
+              class={userDetailErrorMessage.type && "text-red-500"}
               for="userType">User role</Label
             >
             <Select.Root {onSelectedChange}>
@@ -116,7 +116,7 @@
               </Select.Content>
             </Select.Root>
             <p
-              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.type &&
+              class="text-sm font-medium text-red-500 {!userDetailErrorMessage.type &&
                 'hidden'}"
             >
               {userDetailErrorMessage.type}
@@ -124,7 +124,7 @@
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.username && "text-red-600"}
+              class={userDetailErrorMessage.username && "text-red-500"}
               for="username"
               >{userDetail.type == "STUDENT" ? "Regno" : "Username"}</Label
             >
@@ -137,7 +137,7 @@
                 : "Username"}
             />
             <p
-              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.username &&
+              class="text-sm font-medium text-red-500 {!userDetailErrorMessage.username &&
                 'hidden'}"
             >
               {userDetailErrorMessage.username}
@@ -145,7 +145,7 @@
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label
-              class={userDetailErrorMessage.password && "text-red-600"}
+              class={userDetailErrorMessage.password && "text-red-500"}
               for="password">Password</Label
             >
             <Input
@@ -155,7 +155,7 @@
               placeholder="Password"
             />
             <p
-              class="text-sm font-medium text-red-600 {!userDetailErrorMessage.password &&
+              class="text-sm font-medium text-red-500 {!userDetailErrorMessage.password &&
                 'hidden'}"
             >
               {userDetailErrorMessage.password}

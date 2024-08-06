@@ -61,7 +61,8 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -96,6 +97,7 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -118,6 +120,7 @@ ClassAttendanceIDRoute.get("/:classAttendanceId", idValidator("classAttendanceId
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,
@@ -281,7 +284,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             res.json({
                 ok: false,
                 error: {
-                    message: "Class exceeds two hour",
+                    message: "Class exceeded two hour mark",
                     code: 4033
                 },
                 data: null
@@ -373,7 +376,8 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -395,6 +399,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -417,6 +422,7 @@ ClassAttendanceIDRoute.patch("/:classAttendanceId", idValidator("classAttendance
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,
@@ -509,7 +515,8 @@ ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanc
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true,
                         }
                     }
                 }
@@ -521,6 +528,7 @@ ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanc
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -543,6 +551,7 @@ ClassAttendanceIDRoute.delete("/:classAttendanceId", idValidator("classAttendanc
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,

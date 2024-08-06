@@ -1,7 +1,8 @@
 import type {
     Level,
     Semester,
-    Gender
+    Gender,
+    ClassAttendanceStatus
 } from "../type"
 
 interface BaseModel {
@@ -53,3 +54,45 @@ export interface StudentModel extends Omit<LecturerModel, "username"> {
     level: Level
     faceImage: string
 }
+
+
+export interface AttendanceRegisterModel extends RecordModel {
+    session: string;
+    level: Level;
+    decision: any
+    semester: Semester;
+    courseTitle: string;
+    courseCode: string;
+}
+
+export type AttendanceRegisterStudentModel = Omit<StudentModel, "faceImage" | "password">
+
+export type AttendanceRegisterLecturerModel = Omit<LecturerModel, "password">
+
+export interface ClassAttendanceModel extends Omit<AttendanceRegisterModel, "decision"> {
+    lecturerName: string
+    lecturerUsername: string
+    status: ClassAttendanceStatus
+    date: Date
+    startTime: Date
+    endTime: Date
+    submittedAt: Date | null
+}
+
+export interface ClassAttendeeModel {
+    id: string
+    regno: string
+    status: string
+    surname: string
+    otherNames: string
+    name: string
+    crashCourseCode: string
+    crashCourseTitle: string
+}
+
+export type AttendanceRegisterAttendanceModel = Omit<ClassAttendeeModel, "status" | "crashCourse"> & {
+    classesAttended: number
+    classesAttendedPercentage: number
+    numberOfClassTaught: number
+    decision: "ADMIT" | "REJECT"
+} & Record<string, "PRESENT" | "ABSENT">

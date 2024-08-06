@@ -30,6 +30,17 @@
     studentData.password =
       studentData.password || faker.internet.password({ memorable: true });
 
+    getDepartments({ accessToken, count: "all" })
+      .then(({ data }) => {
+        departments = data || [];
+      })
+      .catch(() => {
+        departments = [];
+      })
+      .finally(() => {
+        departmentsLoaded = true;
+      });
+
     open = true;
   }
 
@@ -41,6 +52,8 @@
   function internalClose() {
     errorMessage = {};
     studentData = {};
+    departments = [];
+    departmentsLoaded = false;
   }
 
   function onGenderSelected(currentValue: string) {
@@ -56,21 +69,6 @@
   function onDepartmentSelected(departmentName: string) {
     studentData.department = departmentName;
     departmentPopoverOpen = false;
-    departmentsLoaded = false;
-    departments = [];
-  }
-
-  async function onDepartmentPopoverOpened(open?: boolean) {
-    if (open) {
-      try {
-        departments =
-          (await getDepartments({ accessToken, count: "all" })).data || [];
-      } catch (error) {
-        departments = [];
-      } finally {
-        departmentsLoaded = true;
-      }
-    }
   }
 
   function closeAndFocusTrigger(triggerId: string) {
@@ -146,7 +144,7 @@
           serviceRequest.error.code < 1004
         ) {
           close();
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else if (serviceRequest.error.code == 3022) {
           errorMessage.regno = serviceRequest.error.message;
         } else if (serviceRequest.error.code == 3006) {
@@ -171,10 +169,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `Student successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
@@ -203,7 +201,7 @@
       : `${dialogMode == "CREATE" ? "Create" : "Edit"} student`;
   $: dialogDescription =
     dialogMode == "VIEW"
-      ? "Complete information about the student"
+      ? "Complete information about the student."
       : `${
           dialogMode == "CREATE"
             ? "Create a new student here. Click create when you're done."
@@ -227,6 +225,16 @@
       <Sheet.Description>{dialogDescription}</Sheet.Description>
     </Sheet.Header>
     <form class="grid items-start gap-4 mt-4">
+      {#if dialogMode == "VIEW"}
+        <div
+          class="flex justify-start w-full max-w-full h-56 items-end bg-no-repeat bg-contain bg-center bg-white"
+          style="background-image: url('{studentData.faceImage}');"
+        >
+          <span class="p-2 w-full border bg-accent opacity-50 text-base">
+            Passport
+          </span>
+        </div>
+      {/if}
       <div class="grid gap-2">
         <Label for="surname">Surname</Label>
         {#if dialogMode == "VIEW"}
@@ -244,7 +252,7 @@
             bind:value={studentData.surname}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.surname &&
+            class="text-sm font-medium text-red-500 {!errorMessage.surname &&
               'hidden'}"
           >
             {errorMessage.surname}
@@ -268,7 +276,7 @@
             bind:value={studentData.otherNames}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.otherNames &&
+            class="text-sm font-medium text-red-500 {!errorMessage.otherNames &&
               'hidden'}"
           >
             {errorMessage.otherNames}
@@ -292,7 +300,7 @@
             bind:value={studentData.regno}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.regno &&
+            class="text-sm font-medium text-red-500 {!errorMessage.regno &&
               'hidden'}"
           >
             {errorMessage.regno}
@@ -300,99 +308,10 @@
         {/if}
       </div>
       <div class="grid gap-2">
-        <Label for="department">Department</Label>
-        {#if dialogMode == "VIEW"}
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="department"
-          >
-            {studentData.department}
-          </span>
-        {:else}
-          <Popover.Root
-            bind:open={departmentPopoverOpen}
-            onOpenChange={(open) => onDepartmentPopoverOpened(open)}
-            let:ids
-          >
-            <Popover.Trigger asChild let:builder>
-              <Button
-                builders={[builder]}
-                variant="outline"
-                role="combobox"
-                id="department"
-                aria-expanded={departmentPopoverOpen}
-                class="w-full justify-between font-normal {studentData.department ==
-                  undefined && 'text-muted-foreground'}"
-              >
-                {#if studentData.department}
-                  {studentData.department}
-                {:else}
-                  Select department
-                {/if}
-                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-              <Command.Root loop>
-                <Command.Input placeholder="Search department..." />
-                <Command.List>
-                  {#if departmentsLoaded}
-                    <Command.Empty>No department found.</Command.Empty>
-                    <Command.Group>
-                      {#each departments as department}
-                        <Command.Item
-                          onSelect={(currentValue) => {
-                            studentData.departmentId = department.id;
-                            onDepartmentSelected(currentValue);
-                            closeAndFocusTrigger(ids.trigger);
-                          }}
-                          value={department.name}
-                        >
-                          <Check
-                            class={cn(
-                              "mr-2 h-4 w-4",
-                              studentData.department !== department.name &&
-                                "text-transparent"
-                            )}
-                          />
-                          {department.name}
-                        </Command.Item>
-                      {/each}
-                    </Command.Group>
-                  {:else}
-                    <Command.Loading class="py-6 text-center text-sm">
-                      Loading departments..
-                    </Command.Loading>
-                  {/if}
-                </Command.List>
-              </Command.Root>
-            </Popover.Content>
-          </Popover.Root>
-          <p
-            class="text-sm font-medium text-red-600 {!errorMessage.department &&
-              'hidden'}"
-          >
-            {errorMessage.department}
-          </p>
-        {/if}
-      </div>
-      {#if dialogMode == "VIEW"}
-        <div class="grid gap-2">
-          <Label for="faculty">Faculty</Label>
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="faculty"
-          >
-            {studentData.faculty}
-          </span>
-        </div>
-      {/if}
-      <div class="grid gap-2">
-        <Label for="level">Level</Label>
+        <Label>Level</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex capitalize h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="level"
           >
             {(studentData.level || "L_100").replace("L_", String())}L
           </span>
@@ -408,7 +327,11 @@
                   undefined && 'text-muted-foreground'}"
               >
                 {#if studentData.level}
-                  {studentData.level.replace("L_", String())}L
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {studentData.level.replace("L_", String())}L
+                    </p>
+                  </div>
                 {:else}
                   Select level
                 {/if}
@@ -420,7 +343,7 @@
                 <Command.Input placeholder="Search level..." />
                 <Command.List>
                   <Command.Empty>No level found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each { length: 10 } as _, i}
                       <Command.Item
                         onSelect={(currentValue) => {
@@ -445,7 +368,7 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.level &&
+            class="text-sm font-medium text-red-500 {!errorMessage.level &&
               'hidden'}"
           >
             {errorMessage.level}
@@ -453,11 +376,10 @@
         {/if}
       </div>
       <div class="grid gap-2">
-        <Label for="gender">Gender</Label>
+        <Label>Gender</Label>
         {#if dialogMode == "VIEW"}
           <span
             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="gender"
           >
             {studentData.gender}
           </span>
@@ -468,13 +390,16 @@
                 builders={[builder]}
                 variant="outline"
                 role="combobox"
-                id="gender"
                 aria-expanded={genderPopoverOpen}
                 class="w-full justify-between font-normal {studentData.gender ==
                   undefined && 'text-muted-foreground'}"
               >
                 {#if studentData.gender}
-                  {studentData.gender}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {studentData.gender}
+                    </p>
+                  </div>
                 {:else}
                   Select gender
                 {/if}
@@ -486,7 +411,7 @@
                 <Command.Input placeholder="Search semester..." />
                 <Command.List>
                   <Command.Empty>No gender found.</Command.Empty>
-                  <Command.Group>
+                  <Command.Group class="overflow-auto max-h-52">
                     {#each ["MALE", "FEMALE"] as gender}
                       <Command.Item
                         onSelect={(currentValue) => {
@@ -510,13 +435,99 @@
             </Popover.Content>
           </Popover.Root>
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.gender &&
+            class="text-sm font-medium text-red-500 {!errorMessage.gender &&
               'hidden'}"
           >
             {errorMessage.gender}
           </p>
         {/if}
       </div>
+      <div class="grid gap-2">
+        <Label>Department</Label>
+        {#if dialogMode == "VIEW"}
+          <span
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {studentData.department}
+          </span>
+        {:else}
+          <Popover.Root bind:open={departmentPopoverOpen} let:ids>
+            <Popover.Trigger asChild let:builder>
+              <Button
+                builders={[builder]}
+                variant="outline"
+                role="combobox"
+                aria-expanded={departmentPopoverOpen}
+                class="w-full justify-between font-normal {studentData.department ==
+                  undefined && 'text-muted-foreground'}"
+              >
+                {#if studentData.department}
+                  <div class="grid gap-1" style="width: calc(100% - 20px)">
+                    <p class="truncate text-left">
+                      {studentData.department}
+                    </p>
+                  </div>
+                {:else}
+                  Select department
+                {/if}
+                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+              <Command.Root loop>
+                <Command.Input placeholder="Search department..." />
+                <Command.List>
+                  {#if departmentsLoaded}
+                    <Command.Empty>No department found.</Command.Empty>
+                    <Command.Group class="overflow-auto max-h-52">
+                      {#each departments as department}
+                        <Command.Item
+                          onSelect={(currentValue) => {
+                            studentData.departmentId = department.id;
+                            onDepartmentSelected(currentValue);
+                            closeAndFocusTrigger(ids.trigger);
+                          }}
+                          value={department.name}
+                        >
+                          <Check
+                            class={cn(
+                              "mr-2 h-4 w-4",
+                              studentData.department !== department.name &&
+                                "text-transparent"
+                            )}
+                          />
+                          {department.name}
+                        </Command.Item>
+                      {/each}
+                    </Command.Group>
+                  {:else}
+                    <Command.Loading class="py-6 text-center text-sm">
+                      Loading departments...
+                    </Command.Loading>
+                  {/if}
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
+          <p
+            class="text-sm font-medium text-red-500 {!errorMessage.department &&
+              'hidden'}"
+          >
+            {errorMessage.department}
+          </p>
+        {/if}
+      </div>
+      {#if dialogMode == "VIEW"}
+        <div class="grid gap-2">
+          <Label for="faculty">Faculty</Label>
+          <span
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            id="faculty"
+          >
+            {studentData.faculty}
+          </span>
+        </div>
+      {/if}
       <div class="grid gap-2">
         <Label for="password">Password</Label>
         {#if dialogMode == "VIEW"}
@@ -534,7 +545,7 @@
             bind:value={studentData.password}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.password &&
+            class="text-sm font-medium text-red-500 {!errorMessage.password &&
               'hidden'}"
           >
             {errorMessage.password}

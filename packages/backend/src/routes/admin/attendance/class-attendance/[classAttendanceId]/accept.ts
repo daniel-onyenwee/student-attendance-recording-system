@@ -104,7 +104,8 @@ AcceptRoute.post("/:classAttendanceId/accept", idValidator("classAttendanceId"),
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true,
                         }
                     }
                 }
@@ -119,6 +120,7 @@ AcceptRoute.post("/:classAttendanceId/accept", idValidator("classAttendanceId"),
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -141,6 +143,7 @@ AcceptRoute.post("/:classAttendanceId/accept", idValidator("classAttendanceId"),
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,

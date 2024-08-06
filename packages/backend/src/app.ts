@@ -20,6 +20,8 @@ AppRoute.use(bodyParser.urlencoded({ extended: true }))
 
 AppRoute.use(cors())
 
+AppRoute.options('*', cors())
+
 AppRoute.use(auth())
 
 AppRoute.use(fileUpload())

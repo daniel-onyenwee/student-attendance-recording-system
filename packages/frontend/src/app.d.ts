@@ -4,12 +4,14 @@ declare global {
 	namespace App {
 		type FilterByScheme =
 			| {
-				type: "text" | "number";
+				type: "text" | "number" | "date" | "time";
+				label?: string;
 			}
 			| {
 				type: "select";
+				label?: string;
 				options: Array<{ label?: string; value: string }> | Array<string>;
-			};
+			}
 
 		// interface Error {}
 		interface Locals {

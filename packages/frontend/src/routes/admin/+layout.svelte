@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { LayoutData } from "./$types";
-  import { Sidebar } from "@/components/ui/sidebar/index.js";
-  import * as DropdownMenu from "@/components/ui/dropdown-menu/index.js";
-  import * as Sheet from "@/components/ui/sheet/index.js";
+  import { Sidebar } from "@/components/ui/sidebar";
+  import * as DropdownMenu from "@/components/ui/dropdown-menu";
+  import * as Sheet from "@/components/ui/sheet";
+  import { validate as validateUUID } from "uuid";
   import {
     PanelLeft,
     Settings,
@@ -13,30 +14,32 @@
     Sun,
     Moon,
   } from "lucide-svelte";
-  import { Button } from "@/components/ui/button/index.js";
-  import * as AlertDialog from "@/components/ui/alert-dialog/index.js";
-  import * as Breadcrumb from "@/components/ui/breadcrumb/index.js";
+  import { Button } from "@/components/ui/button";
+  import * as Breadcrumb from "@/components/ui/breadcrumb";
+  import * as Drawer from "@/components/ui/drawer";
   import { resetMode, setMode } from "mode-watcher";
   import {
     DeleteAdminDialog,
-    EditAdminDialog,
-    CreateAdminDialog,
-  } from "@/components/dialog/index.js";
+    AdminAccountDialog,
+    SessionAlertDialog,
+  } from "@/components/dialog";
   import { goto } from "$app/navigation";
+  import { mediaQuery } from "svelte-legos";
+  import { capitalizeText } from "@/utils";
 
   export let data: LayoutData;
 
   function onSessionError() {
-    setTimeout(() => {
-      showSessionExpiredAlertDialog = true;
-    }, 200);
+    sessionAlertDialog.show();
   }
 
-  let showSessionExpiredAlertDialog = false;
-  let showDeleteAdminDialog = false;
-  let showEditAdminDialog = false;
-  let showCreateAdminDialog = false;
+  let deleteAdminDialog: DeleteAdminDialog;
+  let adminAccountDialog: AdminAccountDialog;
+  let sessionAlertDialog: SessionAlertDialog;
+  let openBreadCrumbDropdownMenu = false;
+
   const BREADCRUMB_ITEMS_TO_DISPLAY = 3;
+  const isDesktop = mediaQuery("(min-width: 768px)");
 </script>
 
 <svelte:head>
@@ -81,37 +84,87 @@
         <Breadcrumb.List class="text-base">
           {#if data.breadCrumbItems.length == 1}
             <Breadcrumb.Item>
-              <Breadcrumb.Page class="capitalize">
-                {data.breadCrumbItems[0].label}
+              <Breadcrumb.Page>
+                {capitalizeText(data.breadCrumbItems[0].label, true)}
               </Breadcrumb.Page>
             </Breadcrumb.Item>
           {:else}
             <Breadcrumb.Item>
-              <Breadcrumb.Link
-                href={data.breadCrumbItems[0].href}
-                class="capitalize"
-              >
-                {data.breadCrumbItems[0].label}
+              <Breadcrumb.Link href={data.breadCrumbItems[0].href}>
+                {capitalizeText(data.breadCrumbItems[0].label, true)}
               </Breadcrumb.Link>
             </Breadcrumb.Item>
           {/if}
 
           {#if data.breadCrumbItems.length > 1}
+            {#if data.breadCrumbItems.length > BREADCRUMB_ITEMS_TO_DISPLAY}
+              <Breadcrumb.Separator />
+              <Breadcrumb.Item>
+                {#if $isDesktop}
+                  <DropdownMenu.Root bind:open={openBreadCrumbDropdownMenu}>
+                    <DropdownMenu.Trigger
+                      class="flex items-center gap-1"
+                      aria-label="Toggle menu"
+                    >
+                      <Breadcrumb.Ellipsis class="h-4 w-4" />
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content align="start">
+                      {#each data.breadCrumbItems.slice(1, -2) as item}
+                        {#if item.href != "#"}
+                          <DropdownMenu.Item href={item.href}>
+                            {capitalizeText(item.label, true)}
+                          </DropdownMenu.Item>
+                        {/if}
+                      {/each}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+                {:else}
+                  <Drawer.Root bind:open={openBreadCrumbDropdownMenu}>
+                    <Drawer.Trigger aria-label="Toggle Menu">
+                      <Breadcrumb.Ellipsis class="h-4 w-4" />
+                    </Drawer.Trigger>
+                    <Drawer.Content>
+                      <Drawer.Header class="text-left">
+                        <Drawer.Title>Navigate to</Drawer.Title>
+                        <Drawer.Description>
+                          Select a page to navigate to.
+                        </Drawer.Description>
+                      </Drawer.Header>
+                      <div class="grid gap-1 px-4">
+                        {#each data.breadCrumbItems.slice(1, -2) as item}
+                          {#if item.href != "#"}
+                            <a href={item.href} class="py-1 text-sm">
+                              {capitalizeText(item.label, true)}
+                            </a>
+                          {/if}
+                        {/each}
+                      </div>
+                      <Drawer.Footer class="pt-4">
+                        <Drawer.Close asChild let:builder>
+                          <Button variant="outline" builders={[builder]}>
+                            Close
+                          </Button>
+                        </Drawer.Close>
+                      </Drawer.Footer>
+                    </Drawer.Content>
+                  </Drawer.Root>
+                {/if}
+              </Breadcrumb.Item>
+            {/if}
             {#each data.breadCrumbItems.slice(-BREADCRUMB_ITEMS_TO_DISPLAY + 1) as item}
               <Breadcrumb.Separator />
               <Breadcrumb.Item>
                 {#if item.href == data.currentPage}
-                  <Breadcrumb.Page
-                    class="max-w-8 truncate md:max-w-none capitalize"
-                  >
-                    {item.label}
+                  <Breadcrumb.Page class="max-w-32 truncate">
+                    {!validateUUID(item.label)
+                      ? capitalizeText(item.label, true)
+                      : item.label}
                   </Breadcrumb.Page>
                 {:else}
-                  <Breadcrumb.Link
-                    href={item.href}
-                    class="max-w-8 truncate md:max-w-none capitalize"
-                  >
-                    {item.label}
+                  <Breadcrumb.Link href={item.href} class="max-w-32 truncate">
+                    {!validateUUID(item.label)
+                      ? capitalizeText(item.label, true)
+                      : item.label}
                   </Breadcrumb.Link>
                 {/if}
               </Breadcrumb.Item>
@@ -133,15 +186,15 @@
             </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="end">
-            <DropdownMenu.Item on:click={() => setMode("light")}
-              >Light</DropdownMenu.Item
-            >
-            <DropdownMenu.Item on:click={() => setMode("dark")}
-              >Dark</DropdownMenu.Item
-            >
-            <DropdownMenu.Item on:click={() => resetMode()}
-              >System</DropdownMenu.Item
-            >
+            <DropdownMenu.Item on:click={() => setMode("light")}>
+              Light
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode("dark")}>
+              Dark
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => resetMode()}>
+              System
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
         <DropdownMenu.Root>
@@ -155,11 +208,15 @@
           <DropdownMenu.Content align="end">
             <DropdownMenu.Label>Settings</DropdownMenu.Label>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item on:click={() => (showCreateAdminDialog = true)}>
+            <DropdownMenu.Item
+              on:click={() => adminAccountDialog.show("CREATE", data.user)}
+            >
               <UserRoundPlus class="mr-2 h-4 w-4" />
               New account
             </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => (showEditAdminDialog = true)}>
+            <DropdownMenu.Item
+              on:click={() => adminAccountDialog.show("UPDATE", data.user)}
+            >
               <UserRoundCog class="mr-2 h-4 w-4" />
               Edit account
             </DropdownMenu.Item>
@@ -169,8 +226,8 @@
               Logout
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              class="text-red-600 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
-              on:click={() => (showDeleteAdminDialog = true)}
+              class="text-red-500 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
+              on:click={() => deleteAdminDialog.show()}
             >
               <UserRoundX class="mr-2 h-4 w-4" />
               Delete account
@@ -185,39 +242,16 @@
   </div>
 </main>
 
-<CreateAdminDialog
-  bind:show={showCreateAdminDialog}
-  on:sessionError={onSessionError}
-/>
-
-<EditAdminDialog
+<AdminAccountDialog
+  accessToken={data.session.accessToken}
   bind:user={data.user}
-  bind:show={showEditAdminDialog}
   on:sessionError={onSessionError}
+  bind:this={adminAccountDialog}
 />
-
 <DeleteAdminDialog
-  bind:show={showDeleteAdminDialog}
+  accessToken={data.session.accessToken}
   bind:userPassword={data.user.password}
   on:sessionError={onSessionError}
+  on:successful={async () => await goto("/login")}
+  bind:this={deleteAdminDialog}
 />
-
-<AlertDialog.Root
-  closeOnOutsideClick={false}
-  closeOnEscape={false}
-  bind:open={showSessionExpiredAlertDialog}
->
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Login session expired</AlertDialog.Title>
-      <AlertDialog.Description>
-        Your login session has expired. Please login to continue.
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Action on:click={async () => await goto("/login")}
-        >Login</AlertDialog.Action
-      >
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>

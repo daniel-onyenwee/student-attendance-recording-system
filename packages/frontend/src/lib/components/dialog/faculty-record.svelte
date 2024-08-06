@@ -68,7 +68,7 @@
           serviceRequest.error.code < 1004
         ) {
           close();
-          dispatch("onSessionError");
+          dispatch("sessionError");
         } else if (serviceRequest.error.code == 3001) {
           errorMessage.name = serviceRequest.error.message;
         } else {
@@ -84,10 +84,10 @@
 
       showDialogToast(
         "SUCCESS",
-        "Request successfully",
+        "Request successful",
         `Faculty successfully ${dialogMode == "CREATE" ? "created" : "edited"}`
       );
-      dispatch("onSuccessful");
+      dispatch("successful");
     } catch (error) {
       showDialogToast("ERROR", "Request failed", "Unexpected error");
     }
@@ -109,7 +109,7 @@
       : `${dialogMode == "CREATE" ? "Create" : "Edit"} faculty`;
   $: dialogDescription =
     dialogMode == "VIEW"
-      ? "Complete information about the faculty"
+      ? "Complete information about the faculty."
       : `${
           dialogMode == "CREATE"
             ? "Create a new faculty here. Click create when you're done."
@@ -150,7 +150,7 @@
             bind:value={facultyData.name}
           />
           <p
-            class="text-sm font-medium text-red-600 {!errorMessage.name &&
+            class="text-sm font-medium text-red-500 {!errorMessage.name &&
               'hidden'}"
           >
             {errorMessage.name}

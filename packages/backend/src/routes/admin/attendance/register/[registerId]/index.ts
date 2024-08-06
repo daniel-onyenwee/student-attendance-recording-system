@@ -9,8 +9,6 @@ interface RegisterIDRequestBody {
     courseId: string
     session: string
     decision: any[]
-    lecturerIds: string[]
-    studentIds: string[]
 }
 
 const RegisterIDRoute = express.Router()
@@ -235,36 +233,6 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
         }
     }
 
-    if (body.lecturerIds) {
-        updateData.lecturerIds = (await prismaClient.lecturer.findMany({
-            where: {
-                id: {
-                    in: body.lecturerIds
-                }
-            },
-            select: {
-                id: true
-            }
-        })).map(({ id }) => id)
-    }
-
-    if (body.studentIds) {
-        updateData.studentIds = (await prismaClient.student.findMany({
-            where: {
-                id: {
-                    in: body.studentIds
-                }
-            },
-            select: {
-                id: true
-            }
-        })).map(({ id }) => id)
-    }
-
-    let filteredStudentIds = (updateData.studentIds || []).map((id) => ({ studentId: id }))
-
-    let filteredLecturerIds = (updateData.lecturerIds || []).map((id) => ({ lecturerId: id }))
-
     const attendanceRegister = await prismaClient.attendanceRegister.update({
         where: {
             id: registerId
@@ -273,28 +241,6 @@ RegisterIDRoute.patch("/:registerId", idValidator("registerId"), async (req, res
             decision: updateData.decision,
             courseId: updateData.courseId,
             session: updateData.session,
-            attendanceRegisterLecturers: updateData.lecturerIds ? {
-                deleteMany: {
-                    lecturerId: {
-                        notIn: updateData.lecturerIds
-                    }
-                },
-                createMany: {
-                    data: filteredLecturerIds,
-                    skipDuplicates: true
-                }
-            } : undefined,
-            attendanceRegisterStudents: updateData.lecturerIds ? {
-                deleteMany: {
-                    studentId: {
-                        notIn: updateData.studentIds
-                    }
-                },
-                createMany: {
-                    data: filteredStudentIds,
-                    skipDuplicates: true
-                }
-            } : undefined
         },
         select: {
             id: true,
