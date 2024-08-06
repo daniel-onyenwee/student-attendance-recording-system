@@ -10,11 +10,7 @@ interface ClassAttendanceRequestBody {
     attendanceRegisterLecturerId: string
     date: string
     startTime: string
-    endTime: string,
-    classAttendees: {
-        studentId: string
-        crashCourseId?: string
-    }[]
+    endTime: string
 }
 
 type CourseArrangeBy = "courseTitle" | "courseCode" | "session" | "semester" | "department" | "faculty" | "level"
@@ -39,7 +35,9 @@ interface LecturerOtherNamesQueryOrderByObject {
     }
 }
 
-type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lecturerName" | CourseArrangeBy>> & {
+type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lecturerName" | "createdAt" | "updatedAt" | CourseArrangeBy>> & {
+    createdAt?: ArrangeOrder
+    updatedAt?: ArrangeOrder
     attendanceRegister?: {
         session?: ArrangeOrder
         course?: {
@@ -190,6 +188,9 @@ ClassAttendanceRoute.get("/", async (req, res) => {
                 }
             }
         }
+    } else if (searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).attendanceRegister
+        orderBy[searchBy] = searchOrder
     } else {
         orderBy[searchBy] = searchOrder
     }
@@ -313,7 +314,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true,
                         }
                     }
                 }
@@ -325,6 +327,7 @@ ClassAttendanceRoute.get("/", async (req, res) => {
         let {
             surname,
             otherNames,
+            username
         } = attendanceRegisterLecturer.lecturer
         let {
             code: courseCode,
@@ -343,6 +346,7 @@ ClassAttendanceRoute.get("/", async (req, res) => {
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,
@@ -443,8 +447,6 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         return
     }
 
-    body.classAttendees = body.classAttendees || []
-
     // Number.isNaN(new Date(body.date).getDate()) to check if body.date is a valid date input
     if (Number.isNaN(new Date(body.date).getDate())) {
         res.status(400)
@@ -492,7 +494,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         res.json({
             ok: false,
             error: {
-                message: "Class exceeds two hour",
+                message: "Class exceeded two hour mark",
                 code: 4033
             },
             data: null
@@ -573,7 +575,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
     }
 
     // Delete all the crash course data that are 1 month ago
-    const deleteAMonthOldCrashCourseAttendanceQuery = prismaClient.crashCourseAttendance.deleteMany({
+    await prismaClient.crashCourseAttendance.deleteMany({
         where: {
             courseId: attendanceRegister.courseId,
             date: {
@@ -581,94 +583,6 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             }
         }
     })
-
-    const verifiedCourseIdsQuery = prismaClient.course.findMany({
-        where: {
-            id: {
-                in: body.classAttendees
-                    .filter(({ crashCourseId }) => typeof crashCourseId == "string" && crashCourseId != attendanceRegister.courseId)
-                    .map(({ crashCourseId }) => (crashCourseId || String()).toString())
-            }
-        },
-        select: {
-            id: true
-        }
-    })
-
-    const [_, verifiedCourseIdsQueryResult] = await prismaClient.$transaction([
-        deleteAMonthOldCrashCourseAttendanceQuery,
-        verifiedCourseIdsQuery
-    ])
-
-    const verifiedCourseIds = verifiedCourseIdsQueryResult
-        .map(({ id }) => id)
-
-    let classAttendeesWithStudentIdAndCrashCourseMap: Record<string, string> = {}
-
-    const classAttendeeIds = body.classAttendees.map(({ studentId, crashCourseId }) => {
-        if (crashCourseId && verifiedCourseIds.includes(crashCourseId)) {
-            classAttendeesWithStudentIdAndCrashCourseMap[studentId] = crashCourseId
-        }
-
-        return studentId
-    })
-
-    // Get all the class attendees that exist in attendance register student record
-    let existingClassAttendees = await prismaClient.attendanceRegisterStudent.findMany({
-        where: {
-            attendanceRegisterId: body.attendanceRegisterId,
-            studentId: {
-                in: classAttendeeIds
-            }
-        },
-        select: {
-            id: true,
-            studentId: true
-        }
-    })
-
-    // Get all the class attendees that don't exist in attendance register student record
-    let attendanceUnregisterStudentIds = classAttendeeIds
-        .filter((classAttendeeId) => {
-            return !existingClassAttendees
-                .map(({ studentId }) => studentId)
-                .includes(classAttendeeId)
-        })
-        .map((id) => ({
-            studentId: id,
-        }))
-
-    // Add the class attendees that don't exist in attendance register student record
-    const attendanceUnregisterStudentQuery = await prismaClient.attendanceRegister.update({
-        where: {
-            id: body.attendanceRegisterId
-        },
-        select: {
-            attendanceRegisterStudents: {
-                where: {
-                    studentId: {
-                        in: attendanceUnregisterStudentIds.map(({ studentId }) => studentId)
-                    }
-                },
-                select: {
-                    studentId: true,
-                    id: true
-                }
-            }
-        },
-        data: {
-            attendanceRegisterStudents: {
-                createMany: {
-                    data: attendanceUnregisterStudentIds,
-                    skipDuplicates: true
-                }
-            }
-        }
-    })
-
-    let attendanceUnregisterStudent = attendanceUnregisterStudentQuery.attendanceRegisterStudents
-
-    existingClassAttendees.push(...attendanceUnregisterStudent)
 
     // Create the class attendance
     const classAttendance = await prismaClient.classAttendance.create({
@@ -678,17 +592,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             attendanceRegisterLecturerId: body.attendanceRegisterLecturerId,
             date: body.date,
             startTime: body.startTime,
-            endTime: body.endTime,
-            classAttendees: {
-                createMany: {
-                    skipDuplicates: true,
-                    data: existingClassAttendees.map(({ id }) => {
-                        return ({
-                            attendanceRegisterStudentId: id,
-                        })
-                    })
-                }
-            }
+            endTime: body.endTime
         },
         select: {
             id: true,
@@ -699,16 +603,6 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             submittedAt: true,
             createdAt: true,
             updatedAt: true,
-            classAttendees: {
-                select: {
-                    attendanceRegisterStudent: {
-                        select: {
-                            studentId: true
-                        }
-                    },
-                    id: true
-                }
-            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -737,7 +631,8 @@ ClassAttendanceRoute.post("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -754,46 +649,15 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         date,
         startTime,
         endTime,
-        classAttendees,
         ...otherData
     } = classAttendance
-
-    let classAttendeesWithStudentIdAndIdMap: Record<string, string> = {}
-
-    classAttendees.forEach(({ id, attendanceRegisterStudent }) => [
-        classAttendeesWithStudentIdAndIdMap[attendanceRegisterStudent.studentId] = id
-    ])
-
-    let classAttendeesWithCrashCourse = body.classAttendees
-        .filter(({ crashCourseId }) => typeof crashCourseId == "string" && crashCourseId != attendanceRegister.courseId)
-        .map(({ studentId }) => studentId)
-
-    let classAttendeeWithCrashCourseRecords = existingClassAttendees
-        .filter(({ studentId }) => classAttendeesWithCrashCourse.includes(studentId))
-        .filter(({ studentId }) => typeof classAttendeesWithStudentIdAndIdMap[studentId] == "string")
-        .map(({ studentId }) => {
-            return ({
-                studentId,
-                courseId: classAttendeesWithStudentIdAndCrashCourseMap[studentId],
-                date: body.date,
-                classAttendeeId: classAttendeesWithStudentIdAndIdMap[studentId],
-                session: attendanceRegister.session,
-                startTime: body.startTime,
-                endTime: body.endTime
-            })
-        })
-
-
-    await prismaClient.crashCourseAttendance.createMany({
-        skipDuplicates: true,
-        data: classAttendeeWithCrashCourseRecords
-    })
 
     // Raw sql to handle merging of course crashes to their respective class attendances 
     await prismaClient.$executeRaw(Prisma.sql([mergeCourseCrashSQL]))
 
     let {
         surname,
+        username,
         otherNames,
     } = attendanceRegisterLecturer.lecturer
     let {
@@ -817,6 +681,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
             department: departmentName,
             faculty: facultyName,
             date,
