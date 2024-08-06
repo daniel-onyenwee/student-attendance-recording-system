@@ -1,6 +1,7 @@
 import express from "express"
 import { idValidator } from "../../../../../middleware/index.js"
-import { PrismaClient } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
+import { mergeCourseCrashSQL } from "../../../../../services/index.js"
 
 interface ClassAttendeeSurnameQueryOrderByObject {
     attendanceRegisterStudent: {
@@ -31,14 +32,15 @@ type QueryOrderByObject = {
     }
 } | (ClassAttendeeSurnameQueryOrderByObject | ClassAttendeeOtherNamesQueryOrderByObject)[]
 
-type ArrangeBy = "classAttendeeName" | "classAttendeeRegno" | "classAttendeeCrashCourse"
+type ArrangeBy = "name" | "regno" | "crashCourse"
 
 type ArrangeOrder = "asc" | "desc"
 
 interface ClassAttendeeRouteRequestBody {
-    studentId: string
-    status: "PRESENT" | "ABSENT"
-    crashCourseId?: string
+    classAttendees: {
+        studentId: string
+        crashCourseId?: string
+    }[]
 }
 
 const ClassAttendeeRoute = express.Router()
@@ -68,9 +70,9 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
     }
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
-    let classAttendeeName = url.searchParams.get("classAttendeeName") || String()
-    let classAttendeeRegno = url.searchParams.get("classAttendeeRegno") || String()
-    let classAttendeeCrashCourse = url.searchParams.get("classAttendeeCrashCourse") || String()
+    let name = url.searchParams.get("name") || String()
+    let regno = url.searchParams.get("regno") || String()
+    let crashCourse = url.searchParams.get("crashCourse") || String()
 
     let page = +(url.searchParams.get("page") ?? 1)
     page = !isNaN(page) ? page : 1
@@ -82,10 +84,10 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
 
     let getAllRecord = url.searchParams.has("all")
 
-    let searchBy: ArrangeBy = "classAttendeeName"
+    let searchBy: ArrangeBy = "name"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["classAttendeeName", "classAttendeeRegno", "classAttendeeCrashCourse"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "classAttendeeName"
+        searchBy = ["name", "regno", "crashCourse"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "name"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -96,7 +98,7 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
 
     let orderBy: QueryOrderByObject = {}
 
-    if (searchBy == "classAttendeeName") {
+    if (searchBy == "name") {
         orderBy = [
             {
                 attendanceRegisterStudent: {
@@ -113,7 +115,7 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
                 }
             }
         ]
-    } else if (searchBy == "classAttendeeRegno") {
+    } else if (searchBy == "regno") {
         orderBy = {
             attendanceRegisterStudent: {
                 student: {
@@ -137,10 +139,10 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
         orderBy,
         where: {
             classAttendanceId: classAttendanceId,
-            crashCourseAttendance: classAttendeeCrashCourse ? {
+            crashCourseAttendance: crashCourse ? {
                 course: {
                     code: {
-                        contains: classAttendeeCrashCourse,
+                        contains: crashCourse,
                         mode: "insensitive"
                     }
                 }
@@ -148,31 +150,31 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
             attendanceRegisterStudent: {
                 student: {
                     regno: {
-                        contains: classAttendeeRegno,
+                        contains: regno,
                         mode: "insensitive"
                     },
                     OR: [
                         {
                             surname: {
-                                contains: classAttendeeName,
+                                contains: name,
                                 mode: "insensitive"
                             }
                         },
                         {
                             otherNames: {
-                                contains: classAttendeeName,
+                                contains: name,
                                 mode: "insensitive"
                             }
                         },
                         {
                             otherNames: {
-                                in: classAttendeeName.split(/\s+/),
+                                in: name.split(/\s+/),
                                 mode: "insensitive"
                             }
                         },
                         {
                             surname: {
-                                in: classAttendeeName.split(/\s+/),
+                                in: name.split(/\s+/),
                                 mode: "insensitive"
                             }
                         }
@@ -186,7 +188,8 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
                 select: {
                     course: {
                         select: {
-                            code: true
+                            code: true,
+                            title: true
                         }
                     }
                 }
@@ -215,8 +218,11 @@ ClassAttendeeRoute.get("/:classAttendanceId/class-attendee", idValidator("classA
             id,
             regno,
             status: "PRESENT",
+            surname,
+            otherNames,
             name: `${surname} ${otherNames}`.toUpperCase(),
-            crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
+            crashCourseTitle: crashCourseAttendance ? crashCourseAttendance.course.title : null,
+            crashCourseCode: crashCourseAttendance ? crashCourseAttendance.course.code : null
         })
     })
 
@@ -233,59 +239,7 @@ ClassAttendeeRoute.post("/:classAttendanceId/class-attendee", idValidator("class
 
     let classAttendanceId = req.params.classAttendanceId
 
-    let body: ClassAttendeeRouteRequestBody | null = req.body || {}
-
-    if (!body || Object.keys(body || {}).length == 0) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Request body missing",
-                code: 1004
-            },
-            data: null
-        })
-        return
-    }
-
-    if (!body.studentId) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Missing parameter 'studentId'",
-                code: 4028
-            },
-            data: null
-        })
-        return
-    }
-
-    if (!body.status) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Missing parameter 'status'",
-                code: 4029
-            },
-            data: null
-        })
-        return
-    }
-
-    if (!["PRESENT", "ABSENT"].includes(body.status)) {
-        res.status(400)
-        res.json({
-            ok: false,
-            error: {
-                message: "Invalid status format",
-                code: 4030
-            },
-            data: null
-        })
-        return
-    }
+    let body: ClassAttendeeRouteRequestBody | null = req.body || { classAttendees: [] }
 
     let classAttendancesCount = await prismaClient.classAttendance.findUnique({
         where: {
@@ -295,6 +249,7 @@ ClassAttendeeRoute.post("/:classAttendanceId/class-attendee", idValidator("class
             attendanceRegisterId: true,
             attendanceRegister: {
                 select: {
+                    courseId: true,
                     session: true
                 }
             },
@@ -331,232 +286,179 @@ ClassAttendeeRoute.post("/:classAttendanceId/class-attendee", idValidator("class
         return
     }
 
-    let studentsCount = await prismaClient.student.count({
-        where: {
-            id: body.studentId
-        }
-    })
-
-    if (studentsCount <= 0) {
+    if (!body || Object.keys(body || {}).length == 0) {
         res.status(400)
         res.json({
             ok: false,
             error: {
-                message: "Student not found",
-                code: 3023
+                message: "Request body missing",
+                code: 1004
             },
             data: null
         })
         return
     }
 
-    if (body.crashCourseId) {
-        let coursesCount = await prismaClient.course.count({
-            where: {
-                id: body.crashCourseId
+    body.classAttendees = body.classAttendees || []
+
+    const verifiedCourseIdsQuery = await prismaClient.course.findMany({
+        where: {
+            id: {
+                in: body.classAttendees
+                    .filter(({ crashCourseId }) => typeof crashCourseId == "string" && crashCourseId != classAttendancesCount.attendanceRegister.courseId)
+                    .map(({ crashCourseId }) => (crashCourseId || String()).toString())
             }
-        })
-
-        if (coursesCount <= 0) {
-            res.status(400)
-            res.json({
-                ok: false,
-                error: {
-                    message: "Course not found",
-                    code: 3015
-                },
-                data: null
-            })
-            return
-        }
-    }
-
-    if (body.status == "PRESENT") {
-        let newAttendanceRegisterStudent = await prismaClient.attendanceRegisterStudent.upsert({
-            where: {
-                attendanceRegisterId_studentId: {
-                    attendanceRegisterId: classAttendancesCount.attendanceRegisterId,
-                    studentId: body.studentId
-                }
-            },
-            update: {},
-            create: {
-                attendanceRegisterId: classAttendancesCount.attendanceRegisterId,
-                studentId: body.studentId,
-            },
-            select: {
-                id: true,
-                studentId: true
-            }
-        })
-
-        let { ...classAttendee } = await prismaClient.classAttendee.upsert({
-            where: {
-                classAttendanceId_attendanceRegisterStudentId: {
-                    attendanceRegisterStudentId: newAttendanceRegisterStudent.id,
-                    classAttendanceId: classAttendanceId
-                }
-            },
-            update: {},
-            create: {
-                attendanceRegisterStudentId: newAttendanceRegisterStudent.id,
-                classAttendanceId: classAttendanceId,
-                crashCourseAttendance: body.crashCourseId ? {
-                    create: {
-                        courseId: body.crashCourseId,
-                        session: classAttendancesCount.attendanceRegister.session,
-                        date: classAttendancesCount.date,
-                        startTime: classAttendancesCount.startTime,
-                        endTime: classAttendancesCount.endTime,
-                        studentId: newAttendanceRegisterStudent.studentId
-                    }
-                } : undefined
-            },
-            select: {
-                id: true,
-                crashCourseAttendance: {
-                    select: {
-                        course: {
-                            select: {
-                                code: true
-                            }
-                        }
-                    }
-                },
-                attendanceRegisterStudent: {
-                    select: {
-                        student: {
-                            select: {
-                                regno: true,
-                                otherNames: true,
-                                surname: true
-                            }
-                        }
-                    }
-                }
-            }
-        })
-
-        let {
-            attendanceRegisterStudent: {
-                student:
-                {
-                    regno,
-                    surname: studentSurname,
-                    otherNames: studentOtherNames
-                }
-            },
-            crashCourseAttendance,
-            id: presentClassAttendeeId
-        } = classAttendee
-
-        res.status(200)
-        res.json({
-            ok: true,
-            data: {
-                id: presentClassAttendeeId,
-                status: "PRESENT",
-                regno,
-                name: `${studentSurname} ${studentOtherNames}`.toUpperCase(),
-                crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
-            },
-            error: null
-        })
-        return
-    } else if (body.status == "ABSENT") {
-        let classAttendeeFirstEntry = await prismaClient.classAttendee.findFirst({
-            where: {
-                attendanceRegisterStudent: {
-                    studentId: body.studentId
-                },
-                classAttendanceId: classAttendanceId
-            },
-            select: {
-                attendanceRegisterStudentId: true
-            }
-        })
-
-        if (!classAttendeeFirstEntry) {
-            res.status(400)
-            res.json({
-                ok: false,
-                error: {
-                    message: "Class attendee not found",
-                    code: 4031
-                },
-                data: null
-            })
-            return
-        }
-
-        let { ...classAttendee } = await prismaClient.classAttendee.delete({
-            where: {
-                classAttendanceId_attendanceRegisterStudentId: {
-                    attendanceRegisterStudentId: classAttendeeFirstEntry.attendanceRegisterStudentId,
-                    classAttendanceId: classAttendanceId
-                }
-            },
-            select: {
-                id: true,
-                crashCourseAttendance: {
-                    select: {
-                        course: {
-                            select: {
-                                code: true
-                            }
-                        }
-                    }
-                },
-                attendanceRegisterStudent: {
-                    select: {
-                        student: {
-                            select: {
-                                regno: true,
-                                otherNames: true,
-                                surname: true
-                            }
-                        }
-                    }
-                }
-            }
-        })
-
-        let {
-            attendanceRegisterStudent: {
-                student:
-                {
-                    regno,
-                    surname: studentSurname,
-                    otherNames: studentOtherNames
-                }
-            },
-            crashCourseAttendance,
-            id: presentClassAttendeeId
-        } = classAttendee
-
-        res.status(200)
-        res.json({
-            ok: true,
-            data: {
-                id: presentClassAttendeeId,
-                status: "ABSENT",
-                regno,
-                name: `${studentSurname} ${studentOtherNames}`.toUpperCase(),
-                crashCourse: crashCourseAttendance ? crashCourseAttendance.course.code : null
-            },
-            error: null
-        })
-        return
-    }
-
-    res.status(400)
-    res.json({
-        ok: false,
-        error: {
-            message: "Invalid status format",
-            code: 4030
         },
-        data: null
+        select: {
+            id: true
+        }
+    })
+
+    const verifiedCourseIds = verifiedCourseIdsQuery.map(({ id }) => id)
+
+    let classAttendeesWithStudentIdAndCrashCourseMap: Record<string, string> = {}
+
+    const classAttendeeIds = body.classAttendees.map(({ studentId, crashCourseId }) => {
+        if (crashCourseId && verifiedCourseIds.includes(crashCourseId)) {
+            classAttendeesWithStudentIdAndCrashCourseMap[studentId] = crashCourseId
+        }
+
+        return studentId
+    })
+
+    // Get all the class attendees that exist in attendance register student record
+    let existingClassAttendees = await prismaClient.attendanceRegisterStudent.findMany({
+        where: {
+            attendanceRegisterId: classAttendancesCount.attendanceRegisterId,
+            studentId: {
+                in: classAttendeeIds
+            }
+        },
+        select: {
+            id: true,
+            studentId: true
+        }
+    })
+
+    // Get all the class attendees that don't exist in attendance register student record
+    let attendanceUnregisterStudentIds = classAttendeeIds
+        .filter((classAttendeeId) => {
+            return !existingClassAttendees
+                .map(({ studentId }) => studentId)
+                .includes(classAttendeeId)
+        })
+        .map((id) => ({
+            studentId: id,
+        }))
+
+    // Add the class attendees that don't exist in attendance register student record
+    const attendanceUnregisterStudentQuery = await prismaClient.attendanceRegister.update({
+        where: {
+            id: classAttendancesCount.attendanceRegisterId
+        },
+        select: {
+            attendanceRegisterStudents: {
+                where: {
+                    studentId: {
+                        in: attendanceUnregisterStudentIds.map(({ studentId }) => studentId)
+                    }
+                },
+                select: {
+                    studentId: true,
+                    id: true
+                }
+            }
+        },
+        data: {
+            attendanceRegisterStudents: {
+                createMany: {
+                    data: attendanceUnregisterStudentIds,
+                    skipDuplicates: true
+                }
+            }
+        }
+    })
+
+    let attendanceUnregisterStudent = attendanceUnregisterStudentQuery.attendanceRegisterStudents
+
+    existingClassAttendees.push(...attendanceUnregisterStudent)
+
+    // Create class attendees
+    let { classAttendees, ...classAttendance } = await prismaClient.classAttendance.update({
+        where: {
+            id: classAttendanceId
+        },
+        data: {
+            classAttendees: {
+                createMany: {
+                    skipDuplicates: true,
+                    data: existingClassAttendees.map(({ id }) => {
+                        return ({
+                            attendanceRegisterStudentId: id,
+                        })
+                    })
+                }
+            }
+        },
+        select: {
+            endTime: true,
+            date: true,
+            status: true,
+            startTime: true,
+            submittedAt: true,
+            createdAt: true,
+            updatedAt: true,
+            classAttendees: {
+                select: {
+                    attendanceRegisterStudent: {
+                        select: {
+                            studentId: true
+                        }
+                    },
+                    id: true
+                }
+            },
+        }
+    })
+
+    let classAttendeesWithStudentIdAndIdMap: Record<string, string> = {}
+
+    classAttendees.forEach(({ id, attendanceRegisterStudent }) => [
+        classAttendeesWithStudentIdAndIdMap[attendanceRegisterStudent.studentId] = id
+    ])
+
+    let classAttendeesWithCrashCourse = body.classAttendees
+        .filter(({ crashCourseId }) => typeof crashCourseId == "string" && crashCourseId != classAttendancesCount.attendanceRegister.courseId)
+        .map(({ studentId }) => studentId)
+
+    let classAttendeeWithCrashCourseRecords = existingClassAttendees
+        .filter(({ studentId }) => classAttendeesWithCrashCourse.includes(studentId))
+        .filter(({ studentId }) => typeof classAttendeesWithStudentIdAndIdMap[studentId] == "string")
+        .map(({ studentId }) => {
+            return ({
+                studentId,
+                courseId: classAttendeesWithStudentIdAndCrashCourseMap[studentId],
+                date: classAttendance.date,
+                classAttendeeId: classAttendeesWithStudentIdAndIdMap[studentId],
+                session: classAttendancesCount.attendanceRegister.session,
+                startTime: classAttendance.startTime,
+                endTime: classAttendance.endTime
+            })
+        })
+
+    await prismaClient.crashCourseAttendance.createMany({
+        skipDuplicates: true,
+        data: classAttendeeWithCrashCourseRecords
+    })
+
+    // Raw sql to handle merging of course crashes to their respective class attendances 
+    await prismaClient.$executeRaw(Prisma.sql([mergeCourseCrashSQL]))
+
+    res.status(200)
+    res.json({
+        ok: true,
+        data: null,
+        error: null
     })
 })
 
@@ -600,14 +502,14 @@ ClassAttendeeRoute.delete("/:classAttendanceId/class-attendee", async (req, res)
         return
     }
 
-    let body: { ClassAttendeesId: string[] } = req.body || {}
+    let body: { classAttendeesId: string[] } = req.body || {}
 
-    body.ClassAttendeesId = body.ClassAttendeesId || []
+    body.classAttendeesId = body.classAttendeesId || []
 
     await prismaClient.classAttendee.deleteMany({
         where: {
             id: {
-                in: body.ClassAttendeesId
+                in: body.classAttendeesId
             },
             classAttendanceId: classAttendanceId
         }
