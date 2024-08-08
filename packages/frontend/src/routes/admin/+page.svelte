@@ -194,11 +194,13 @@
       </Card.Footer>
     </Card.Root>
   {:else}
-    {#each { length: 2 } as i}
+    {#each { length: 2 } as _, index}
       <Card.Root>
         <Card.Header class="pb-2">
           <Card.Description>
-            {i == 0 ? "Total class attendances" : "Ongoing class attendances"}
+            {index == 0
+              ? "Total class attendances"
+              : "Ongoing class attendances"}
           </Card.Description>
           <Card.Title class="text-4xl">
             <Skeleton class="w-full h-9" />
@@ -210,7 +212,7 @@
           </div>
         </Card.Content>
         <Card.Footer>
-          <Skeleton class="w-full h-4" />
+          <Progress value={0} />
         </Card.Footer>
       </Card.Root>
     {/each}
