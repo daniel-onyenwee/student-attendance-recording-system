@@ -177,14 +177,11 @@
         <Table.Row>
           <Table.Head class="min-w-72 max-w-72 truncate">Name</Table.Head>
           <Table.Head class="min-w-48 max-w-48 truncate">Regno</Table.Head>
-          <Table.Head class="min-w-36 max-w-36 truncate text-center">
+          <Table.Head class="min-w-36 max-w-36 truncate">
             Classes attended
           </Table.Head>
-          <Table.Head class="min-w-36 max-w-36 truncate text-center">
-            Percentage
-          </Table.Head>
+          <Table.Head class="min-w-36 max-w-36 truncate">Percentage</Table.Head>
           <Table.Head class="min-w-24 max-w-24 truncate">Decision</Table.Head>
-
           {#each data.attendanceRegister.classAttendances as classAttendance, _ (classAttendance.id)}
             <Table.Head class="min-w-48 text-center">
               {formatDate(classAttendance.date, "do LLL, yyyy")}
@@ -209,17 +206,15 @@
             <Table.Cell class="min-w-48 max-w-48 truncate">
               {attendanceRegisterAttendance.regno}
             </Table.Cell>
-            <Table.Cell class="min-w-36 max-w-36 truncate text-center">
+            <Table.Cell class="min-w-36 max-w-36 truncate">
               {attendanceRegisterAttendance.classesAttended} / {attendanceRegisterAttendance.numberOfClassTaught}
             </Table.Cell>
-            <Table.Cell class="min-w-36 max-w-36 truncate text-center">
+            <Table.Cell class="min-w-36 max-w-36 truncate">
               {attendanceRegisterAttendance.classesAttendedPercentage.toFixed(
                 2
               )}%
             </Table.Cell>
-            <Table.Cell
-              class="min-w-24 max-w-24 truncate text-center capitalize"
-            >
+            <Table.Cell class="min-w-24 max-w-24 truncate capitalize">
               {attendanceRegisterAttendance.decision.toLowerCase()}
             </Table.Cell>
             {#each data.attendanceRegister.classAttendances as classAttendance, _ (classAttendance.id)}
