@@ -114,7 +114,6 @@ StudentRoute.get("/:studentId/:session", idValidator("studentId"), async (req, r
     }
 
     const {
-        id,
         surname,
         otherNames,
         regno,
@@ -145,14 +144,17 @@ StudentRoute.get("/:studentId/:session", idValidator("studentId"), async (req, r
     res.json({
         ok: true,
         data: {
-            id,
-            name: `${surname} ${otherNames}`.toUpperCase(),
-            regno,
-            gender,
-            level,
-            department: departmentName,
-            faculty: facultyName,
-            courses: report
+            metadata: {
+                name: `${surname} ${otherNames}`.toUpperCase(),
+                regno,
+                surname,
+                otherNames,
+                level,
+                gender,
+                department: departmentName,
+                faculty: facultyName,
+            },
+            report
         },
         error: null
     })
@@ -217,6 +219,7 @@ StudentRoute.get("/download/:studentId/:session", idValidator("studentId"), asyn
     if (semester) {
         semester = ["FIRST", "SECOND"].includes(semester) ? semester : "FIRST"
     }
+
 
     let searchBy: ArrangeBy = "courseTitle"
     if (url.searchParams.has("by")) {
@@ -307,7 +310,7 @@ async function generateStudentReport(
                 code: {
                     contains: courseCode,
                     mode: "insensitive"
-                },
+                }
             }
         },
         orderBy,
