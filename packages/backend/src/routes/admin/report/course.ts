@@ -10,7 +10,7 @@ import {
 import { format } from "date-fns"
 import { PassThrough } from "node:stream"
 
-type ArrangeBy = "studentName" | "studentRegno"
+type ArrangeBy = "name" | "regno"
 
 type ArrangeOrder = "asc" | "desc"
 
@@ -91,8 +91,8 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
     }
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
-    let studentName = url.searchParams.get("studentName") || String()
-    let studentRegno = url.searchParams.get("studentRegno") || String()
+    let name = url.searchParams.get("name") || String()
+    let regno = url.searchParams.get("regno") || String()
 
     let page = +(url.searchParams.get("page") ?? 1)
     page = !isNaN(page) ? page : 1
@@ -104,10 +104,10 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
 
     let getAllRecord = url.searchParams.has("all")
 
-    let searchBy: ArrangeBy = "studentName"
+    let searchBy: ArrangeBy = "name"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["studentName", "studentRegno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "studentName"
+        searchBy = ["name", "regno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "name"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -120,9 +120,9 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
         student: {}
     }
 
-    if (searchBy == "studentRegno") {
+    if (searchBy == "regno") {
         orderBy.student["regno"] = searchOrder
-    } else if (searchBy == "studentName") {
+    } else if (searchBy == "name") {
         orderBy = [
             {
                 student: {
@@ -140,8 +140,8 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
     let report = await generateCourseReport({
         prismaClient,
         courseId,
-        studentName,
-        studentRegno,
+        name,
+        regno,
         session,
         orderBy,
         getAllRecord,
@@ -149,7 +149,8 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
         count
     })
 
-    const { id,
+    const {
+        id,
         title,
         semester,
         code,
@@ -166,17 +167,18 @@ CourseRoute.get("/:courseId/:session", idValidator("courseId"), async (req, res)
     res.json({
         ok: true,
         data: {
-            id,
-            code,
-            title,
-            level,
-            semester,
-            department: departmentName,
-            faculty: facultyName,
-            totalClasses: report.totalClasses,
-            classesDate: report.classesDate,
-            totalClassesInHour: report.totalClassesInHour,
-            attendances: report.attendances
+            metadata: {
+                totalClasses: report.totalClasses,
+                classesDate: report.classesDate,
+                totalClassesInHour: report.totalClassesInHour,
+                code,
+                title,
+                level,
+                semester,
+                department: departmentName,
+                faculty: facultyName,
+            },
+            report: report.attendances
         },
         error: null
     })
@@ -238,8 +240,8 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
     }
 
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
-    let studentName = url.searchParams.get("studentName") || String()
-    let studentRegno = url.searchParams.get("studentRegno") || String()
+    let name = url.searchParams.get("name") || String()
+    let regno = url.searchParams.get("regno") || String()
 
     let page = +(url.searchParams.get("page") ?? 1)
     page = !isNaN(page) ? page : 1
@@ -251,10 +253,10 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
 
     let getAllRecord = url.searchParams.has("all")
 
-    let searchBy: ArrangeBy = "studentName"
+    let searchBy: ArrangeBy = "name"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["studentName", "studentRegno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "studentName"
+        searchBy = ["name", "regno"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "name"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -267,9 +269,9 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
         student: {}
     }
 
-    if (searchBy == "studentRegno") {
+    if (searchBy == "regno") {
         orderBy.student["regno"] = searchOrder
-    } else if (searchBy == "studentName") {
+    } else if (searchBy == "name") {
         orderBy = [
             {
                 student: {
@@ -287,8 +289,8 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
     let report = await generateCourseReport({
         prismaClient,
         courseId,
-        studentName,
-        studentRegno,
+        name,
+        regno,
         session,
         orderBy,
         getAllRecord,
@@ -307,12 +309,11 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
             { header: "Name", key: "name", width: 35 },
             { header: "Regno", key: "regno", width: 20 },
             { header: "Decision", key: "decision", width: 10 },
-            ...(report.classesDate.map(({ date, endTime, startTime }) => {
-                let key = `${format(date, "yyyy-dd-LL")}T${startTime.getUTCHours().toString().padStart(2, "0")}:${startTime.getUTCMinutes().toString().padStart(2, "0")}-${endTime.getUTCHours().toString().padStart(2, "0")}:${endTime.getUTCMinutes().toString().padStart(2, "0")}`
+            ...(report.classesDate.map(({ id, date, endTime, startTime }) => {
                 return ({
-                    key,
+                    key: id,
                     width: 22,
-                    header: format(date, "LLLL do, yyyy")
+                    header: `${format(date, "LL/dd/yyyy")}\n${format(startTime, "hh:mm aaa")} - ${format(endTime, "hh:mm aaa")}`
                 })
             })),
             { header: "Classes attended", key: "classesAttended", width: 20 },
@@ -330,8 +331,8 @@ CourseRoute.get("/download/:courseId/:session", idValidator("courseId"), async (
     readStream.pipe(res)
 })
 
-async function generateCourseReport({ prismaClient, courseId, session, studentName = undefined, studentRegno = undefined, orderBy = { student: {} }, page = 1, count = 100, getAllRecord = false }:
-    { prismaClient: PrismaClient; courseId: string; session: string; studentName?: string | undefined; studentRegno?: string | undefined; orderBy?: QueryOrderByObject; page?: number; count?: number; getAllRecord?: boolean }) {
+async function generateCourseReport({ prismaClient, courseId, session, name = undefined, regno = undefined, orderBy = { student: {} }, page = 1, count = 100, getAllRecord = false }:
+    { prismaClient: PrismaClient; courseId: string; session: string; name?: string | undefined; regno?: string | undefined; orderBy?: QueryOrderByObject; page?: number; count?: number; getAllRecord?: boolean }) {
     let attendanceRegisterQuery = await prismaClient.attendanceRegister.findUnique({
         where: {
             courseId_session: {
@@ -364,31 +365,31 @@ async function generateCourseReport({ prismaClient, courseId, session, studentNa
                 where: {
                     student: {
                         regno: {
-                            contains: studentRegno,
+                            contains: regno,
                             mode: "insensitive"
                         },
                         OR: [
                             {
                                 surname: {
-                                    contains: studentName,
+                                    contains: name,
                                     mode: "insensitive"
                                 }
                             },
                             {
                                 otherNames: {
-                                    contains: studentName,
+                                    contains: name,
                                     mode: "insensitive"
                                 }
                             },
                             {
-                                otherNames: studentName ? {
-                                    in: studentName.split(/\s+/),
+                                otherNames: name ? {
+                                    in: name.split(/\s+/),
                                     mode: "insensitive"
                                 } : undefined
                             },
                             {
-                                surname: studentName ? {
-                                    in: studentName.split(/\s+/),
+                                surname: name ? {
+                                    in: name.split(/\s+/),
                                     mode: "insensitive"
                                 } : undefined
                             }
@@ -451,13 +452,12 @@ async function generateCourseReport({ prismaClient, courseId, session, studentNa
             let studentNumberOfClassAttended = 0
             let studentPercentageOfClassAttended = 0
 
-            classAttendances.forEach(({ date, classAttendees, endTime, startTime }) => {
+            classAttendances.forEach(({ id: classAttendanceId, classAttendees }) => {
                 let isPresent = classAttendees.map(({ attendanceRegisterStudentId }) => attendanceRegisterStudentId).includes(id)
                 if (isPresent) {
                     studentNumberOfClassAttended += 1
                 }
-                let key = `${format(date, "yyyy-dd-LL")}T${startTime.getUTCHours().toString().padStart(2, "0")}:${startTime.getUTCMinutes().toString().padStart(2, "0")}-${endTime.getUTCHours().toString().padStart(2, "0")}:${endTime.getUTCMinutes().toString().padStart(2, "0")}`
-                attendances[key] = isPresent ? 1 : 0
+                attendances[classAttendanceId] = isPresent ? 1 : 0
             })
 
             studentPercentageOfClassAttended = ((studentNumberOfClassAttended / numberOfClassTaught) * 100)
@@ -465,10 +465,13 @@ async function generateCourseReport({ prismaClient, courseId, session, studentNa
             return ({
                 id,
                 name: `${surname} ${otherNames}`.toString(),
+                surname,
+                otherNames,
                 regno: otherStudentData.regno,
                 ...attendances,
                 classesAttended: studentNumberOfClassAttended,
                 classesAttendedPercentage: studentPercentageOfClassAttended,
+                numberOfClassTaught,
                 decision: attendanceRegisterStudentDecisionDeterminer(
                     {
                         StudentName: `${surname} ${otherNames}`.toString(),
