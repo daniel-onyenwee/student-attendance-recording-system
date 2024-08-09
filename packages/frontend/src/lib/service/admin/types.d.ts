@@ -55,7 +55,6 @@ export interface StudentModel extends Omit<LecturerModel, "username"> {
     faceImage: string
 }
 
-
 export interface AttendanceRegisterModel extends RecordModel {
     session: string;
     level: Level;
@@ -96,3 +95,88 @@ export type AttendanceRegisterAttendanceModel = Omit<ClassAttendeeModel, "status
     numberOfClassTaught: number
     decision: "ADMIT" | "REJECT"
 } & Record<string, "PRESENT" | "ABSENT">
+
+export interface LecturerReportDetail {
+    id: string
+    courseCode: string
+    courseTitle: string
+    totalClasses: number
+    semester: Semester
+    totalClassesInHour: number
+    classesTaught: number
+    classesTaughtInHour: number
+    classesTaughtPercentage: number
+}
+
+export interface StudentReportDetail {
+    id: string
+    courseCode: string
+    courseTitle: string
+    semester: Semester
+    totalClasses: number
+    classesAttended: number
+    classesAttendedPercentage: number
+}
+
+export interface StudentReportMetadata {
+    name: string
+    regno: string
+    surname: string
+    otherNames: string
+    gender: Gender
+    level: Level
+    department: string
+    faculty: string
+}
+export interface StudentReportModel {
+    metadata: StudentReportMetadata
+    report: StudentReportDetail[]
+}
+
+export interface LecturerReportMetadata {
+    name: string
+    surname: string
+    otherNames: string
+    gender: Gender
+    department: string
+    faculty: string
+}
+
+export interface LecturerReportModel {
+    metadata: LecturerReportMetadata
+    report: LecturerReportDetail[]
+}
+
+export interface CourseReportMetadata {
+    totalClasses: number
+    classesDate: {
+        id: string
+        date: Date
+        startTime: Date
+        endTime: Date
+    }[]
+    totalClassesInHour: number
+    code: string
+    title: string
+    level: Level
+    semester: Semester
+    department: string
+    faculty: string
+}
+
+export type CourseReportDetail = ({
+    classesAttended: number
+    classesAttendedPercentage: number
+    decision: "ADMIT" | "REJECT"
+    id: string
+    name: string
+    regno: string
+    surname: string
+    otherNames: string
+    numberOfClassTaught: number
+} & Record<string, 0 | 1>)
+
+export interface CourseReportModel {
+    metadata: CourseReportMetadata
+    report: CourseReportDetail[]
+}
