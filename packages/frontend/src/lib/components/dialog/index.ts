@@ -14,4 +14,7 @@ export { default as AttendanceRegisterStudentRecordDialog } from "./attendance-r
 export { default as AttendanceRegisterAttendanceRecordDialog } from "./attendance-register-attendance-record.svelte"
 export { default as ClassAttendanceDialog } from "./class-attendance.svelte"
 export { default as ClassAttendeeDialog } from "./class-attendee.svelte"
+export { default as StudentReportDialog } from "./student-report.svelte"
+export { default as LecturerReportDialog } from "./lecturer-report.svelte"
+export { default as CourseReportDialog } from "./course-report.svelte"
 export { default as DeleteClassAttendanceRecordDialog } from "./delete-class-attendance-record.svelte"
