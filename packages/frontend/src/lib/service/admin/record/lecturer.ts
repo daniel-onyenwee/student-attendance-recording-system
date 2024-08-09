@@ -47,6 +47,17 @@ export const getLecturers: AuthenticatedServiceHandle<Partial<GetLecturersServic
     return responseBody
 }
 
+export const getLecturerById: AuthenticatedServiceHandle<{ id: string }, LecturerModel> = async ({ accessToken, id }) => {
+    let response = await fetch(new URL(`/admin/record/lecturer/${id}`, BACKEND_BASE_URL), {
+        method: "GET",
+        headers: AuthenticatedHeadersInit(accessToken)
+    })
+
+    let responseBody = await response.json()
+
+    return responseBody
+}
+
 export const createLecturer: AuthenticatedServiceHandle<LecturerServiceBody, LecturerModel> = async (data) => {
     let { accessToken, ...otherData } = data
 

@@ -61,25 +61,27 @@
     <header
       class="sticky top-0 z-30 flex h-16 justify-between items-center gap-4 border-b bg-background px-4 py-3 sm:h-auto sm:px-6"
     >
-      <Sheet.Root>
-        <Sheet.Trigger asChild let:builder>
-          <Button
-            builders={[builder]}
-            size="icon"
-            variant="outline"
-            class="sm:hidden"
-          >
-            <PanelLeft class="h-5 w-5" />
-            <span class="sr-only">Toggle Menu</span>
-          </Button>
-        </Sheet.Trigger>
-        <Sheet.Content side="left" class="sm:max-w-[250px]">
-          <Sidebar
-            isMenuCollapsed={data.isMenuCollapsed}
-            currentPage={data.currentPage}
-          />
-        </Sheet.Content>
-      </Sheet.Root>
+      {#if !$isDesktop}
+        <Sheet.Root>
+          <Sheet.Trigger asChild let:builder>
+            <Button
+              builders={[builder]}
+              size="icon"
+              variant="outline"
+              class="sm:hidden"
+            >
+              <PanelLeft class="h-5 w-5" />
+              <span class="sr-only">Toggle Menu</span>
+            </Button>
+          </Sheet.Trigger>
+          <Sheet.Content side="left" class="sm:max-w-[250px]">
+            <Sidebar
+              isMenuCollapsed={data.isMenuCollapsed}
+              currentPage={data.currentPage}
+            />
+          </Sheet.Content>
+        </Sheet.Root>
+      {/if}
       <Breadcrumb.Root class="hidden md:flex">
         <Breadcrumb.List class="text-base">
           {#if data.breadCrumbItems.length == 1}

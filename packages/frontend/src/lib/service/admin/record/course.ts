@@ -47,6 +47,17 @@ export const getCourses: AuthenticatedServiceHandle<Partial<GetCoursesServiceBod
     return responseBody
 }
 
+export const getCourseById: AuthenticatedServiceHandle<{ id: string }, CourseModel> = async ({ accessToken, id }) => {
+    let response = await fetch(new URL(`/admin/record/course/${id}`, BACKEND_BASE_URL), {
+        method: "GET",
+        headers: AuthenticatedHeadersInit(accessToken)
+    })
+
+    let responseBody = await response.json()
+
+    return responseBody
+}
+
 export const createCourse: AuthenticatedServiceHandle<CourseServiceBody, CourseModel> = async (data) => {
     let { accessToken, ...otherData } = data
 

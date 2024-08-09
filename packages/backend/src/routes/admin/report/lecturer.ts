@@ -38,7 +38,6 @@ LecturerRoute.get("/:lecturerId/:session", idValidator("lecturerId"), async (req
             id: lecturerId
         },
         select: {
-            id: true,
             surname: true,
             gender: true,
             otherNames: true,
@@ -112,7 +111,6 @@ LecturerRoute.get("/:lecturerId/:session", idValidator("lecturerId"), async (req
     }
 
     const {
-        id,
         surname,
         otherNames,
         gender,
@@ -141,12 +139,15 @@ LecturerRoute.get("/:lecturerId/:session", idValidator("lecturerId"), async (req
     res.json({
         ok: true,
         data: {
-            id,
-            name: `${surname} ${otherNames}`.toUpperCase(),
-            gender,
-            department: departmentName,
-            faculty: facultyName,
-            courses: report
+            metadata: {
+                name: `${surname} ${otherNames}`.toUpperCase(),
+                surname,
+                otherNames,
+                gender,
+                department: departmentName,
+                faculty: facultyName,
+            },
+            report
         },
         error: null
     })
@@ -302,7 +303,7 @@ async function generateLecturerReport(
                 code: {
                     contains: courseCode,
                     mode: "insensitive"
-                },
+                }
             }
         },
         orderBy,

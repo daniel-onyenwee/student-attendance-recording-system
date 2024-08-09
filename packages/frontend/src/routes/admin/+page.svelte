@@ -16,6 +16,7 @@
   import { SessionAlertDialog } from "@/components/dialog";
   import { Progress } from "@/components/ui/progress";
   import numbro from "numbro";
+  import { formatNumber } from "@/utils";
 
   export let data: PageData;
 
@@ -116,7 +117,6 @@
   };
   let sortWorker: Worker;
   let sessionAlertDialog: SessionAlertDialog;
-  let numberFormat = new Intl.NumberFormat();
 
   onMount(async () => {
     let url = new URL(window.location.href);
@@ -154,12 +154,12 @@
       <Card.Header class="pb-2">
         <Card.Description>Total class attendances</Card.Description>
         <Card.Title class="text-4xl">
-          {numberFormat.format(stats.classAttendanceCount)}
+          {formatNumber(stats.classAttendanceCount)}
         </Card.Title>
       </Card.Header>
       <Card.Content>
         <div class="text-muted-foreground text-xs">
-          {numberFormat.format(stats.todayClassAttendanceCount)} added today
+          {formatNumber(stats.todayClassAttendanceCount)} added today
         </div>
       </Card.Content>
       <Card.Footer>
@@ -174,7 +174,7 @@
       <Card.Header class="pb-2">
         <Card.Description>Ongoing class attendances</Card.Description>
         <Card.Title class="text-4xl">
-          {numberFormat.format(stats.ongoingClassAttendanceCount)}
+          {formatNumber(stats.ongoingClassAttendanceCount)}
         </Card.Title>
       </Card.Header>
       <Card.Content>
@@ -194,11 +194,13 @@
       </Card.Footer>
     </Card.Root>
   {:else}
-    {#each { length: 2 } as i}
+    {#each { length: 2 } as _, index}
       <Card.Root>
         <Card.Header class="pb-2">
           <Card.Description>
-            {i == 0 ? "Total class attendances" : "Ongoing class attendances"}
+            {index == 0
+              ? "Total class attendances"
+              : "Ongoing class attendances"}
           </Card.Description>
           <Card.Title class="text-4xl">
             <Skeleton class="w-full h-9" />
@@ -210,7 +212,7 @@
           </div>
         </Card.Content>
         <Card.Footer>
-          <Skeleton class="w-full h-4" />
+          <Progress value={0} />
         </Card.Footer>
       </Card.Root>
     {/each}

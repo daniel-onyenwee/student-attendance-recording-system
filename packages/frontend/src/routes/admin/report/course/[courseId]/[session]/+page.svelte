@@ -1,29 +1,46 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { Ellipsis, LoaderCircle } from "lucide-svelte/icons";
+  import { Download, Ellipsis, LoaderCircle } from "lucide-svelte/icons";
   import { Button } from "@/components/ui/button";
   import * as Card from "@/components/ui/card";
   import { Skeleton } from "@/components/ui/skeleton";
-  import * as DropdownMenu from "@/components/ui/dropdown-menu";
-  import * as Table from "@/components/ui/table";
-  import { getAttendanceRegisterAttendances } from "@/service";
-  import type {
-    AttendanceRegisterAttendanceSortByOption,
-    AttendanceRegisterAttendanceModel,
-    AttendanceRegisterAttendanceFilterByOption,
-  } from "@/service";
-  import { formatDate } from "date-fns";
-  import { onMount } from "svelte";
-  import { formatNumber, sleep } from "@/utils";
-  import SortWorker from "@/web-workers/sort?worker";
-  import {
-    SessionAlertDialog,
-    AttendanceRegisterAttendanceRecordDialog,
-  } from "@/components/dialog";
-  import { SortByMenu, FilterByMenu } from "@/components/menu";
   import { Badge } from "@/components/ui/badge";
+  import * as Table from "@/components/ui/table";
+  import * as DropdownMenu from "@/components/ui/dropdown-menu";
+  import {
+    generateCourseReport,
+    generateCourseReportDownloadLink,
+  } from "@/service";
+  import type {
+    CourseReportFilterByOption,
+    CourseReportSortByOption,
+    CourseReportDetail,
+    CourseReportMetadata,
+  } from "@/service";
+  import { CourseReportDialog, SessionAlertDialog } from "@/components/dialog";
+  import { onMount } from "svelte";
+  import SortWorker from "@/web-workers/sort?worker";
+  import { SortByMenu, FilterByMenu } from "@/components/menu";
+  import { formatNumber, sleep } from "@/utils";
+  import { formatDate } from "date-fns";
+  import numbro from "numbro";
 
   export let data: PageData;
+
+  function onDownload() {
+    let link = generateCourseReportDownloadLink({
+      filter: filterBy,
+      courseId: data.course.id,
+      sort: sortBy,
+      session: encodeURIComponent(data.academicSession),
+    });
+
+    let linkElem = document.createElement("a");
+    linkElem.target = "_blank";
+    linkElem.rel = "noopener noreferrer";
+    linkElem.href = link;
+    linkElem.click();
+  }
 
   function onSortBy(by: string) {
     if (!sortWorker) return;
@@ -36,9 +53,9 @@
     }
 
     sortWorker.postMessage({
-      type: "ATTENDANCE_REGISTER_ATTENDANCE",
+      type: "COURSE_REPORT",
       mode: "REQUEST",
-      payload: attendanceRegisterAttendances,
+      payload: reports,
       sortOptions: sortBy,
     });
   }
@@ -53,9 +70,9 @@
 
       if (sortWorker) {
         sortWorker.postMessage({
-          type: "ATTENDANCE_REGISTER_ATTENDANCE",
+          type: "COURSE_REPORT",
           mode: "REQUEST",
-          payload: attendanceRegisterAttendances,
+          payload: reports,
           sortOptions: sortBy,
         });
       }
@@ -65,20 +82,21 @@
   }
 
   async function loadData(page: number = 1) {
-    let serviceResponse = await getAttendanceRegisterAttendances({
+    let serviceResponse = await generateCourseReport({
       accessToken: data.session.accessToken,
+      courseId: data.course.id,
+      session: encodeURIComponent(data.academicSession),
       filter: filterBy,
-      count: 25,
       sort: sortBy,
-      registerId: data.attendanceRegister.id,
+      count: 25,
       page,
     });
 
     if (serviceResponse.data) {
-      attendanceRegisterAttendances = [
-        ...attendanceRegisterAttendances,
-        ...serviceResponse.data,
-      ];
+      reports = [...reports, ...serviceResponse.data.report];
+      if (!initialDataLoaded) {
+        reportMetadata = serviceResponse.data.metadata;
+      }
       return;
     } else {
       throw new Error(JSON.stringify(serviceResponse.error));
@@ -86,7 +104,7 @@
   }
 
   async function initializeData() {
-    attendanceRegisterAttendances = [];
+    reports = [];
     initialDataLoaded = false;
     currentPage = 1;
     try {
@@ -115,34 +133,29 @@
     { name: "Regno", value: "regno" },
   ];
 
-  let sortBy: AttendanceRegisterAttendanceSortByOption = {
+  let sortBy: CourseReportSortByOption = {
     by: "regno",
     ascending: true,
   };
-  let filterBy: AttendanceRegisterAttendanceFilterByOption = {
+  let filterBy: CourseReportFilterByOption = {
     name: String(),
     regno: String(),
   };
-  let filterScheme: { [name: string]: App.FilterByScheme } = {
-    gender: {
-      type: "select",
-      options: ["MALE", "FEMALE"],
-    },
-  };
-  let attendanceRegisterAttendances: AttendanceRegisterAttendanceModel[] = [];
+  let reports: CourseReportDetail[] = [];
   let currentPage = 1;
   let requestOngoing = false;
+  let reportMetadata: Partial<CourseReportMetadata> = {};
   let initialDataLoaded = false;
   let sortWorker: Worker;
   let sessionAlertDialog: SessionAlertDialog;
-  let attendanceRegisterAttendanceRecordDialog: AttendanceRegisterAttendanceRecordDialog;
+  let courseReportDialog: CourseReportDialog;
 
   onMount(async () => {
     sortWorker = new SortWorker();
     sortWorker.addEventListener("message", (e) => {
       const { type, payload, mode } = e.data;
-      if (type == "ATTENDANCE_REGISTER_ATTENDANCE" && mode == "RESPONSE") {
-        attendanceRegisterAttendances = payload;
+      if (type == "COURSE_REPORT" && mode == "RESPONSE") {
+        reports = payload;
       }
     });
 
@@ -150,13 +163,94 @@
   });
 </script>
 
-<div class="flex items-center gap-1 justify-end mb-3">
+<svelte:head>
+  <title>
+    {data.course.code} - {data.academicSession} | Report
+  </title>
+</svelte:head>
+
+<div
+  class="grid gap-3 mb-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+>
+  <Card.Root class="col-span-1 md:col-span-2">
+    <Card.Header class="pb-2">
+      <Card.Description>Course</Card.Description>
+      <Card.Title class="text-4xl">
+        {data.course.title}
+      </Card.Title>
+    </Card.Header>
+    <Card.Content>
+      <div class="text-muted-foreground">
+        {data.course.code}
+      </div>
+    </Card.Content>
+  </Card.Root>
+  <Card.Root class="col-span-1 md:col-span-2 lg:col-span-1">
+    <Card.Header class="pb-2">
+      <Card.Description>Session</Card.Description>
+      <Card.Title class="text-4xl">
+        {data.academicSession}
+      </Card.Title>
+    </Card.Header>
+    <Card.Content>
+      <div class="text-muted-foreground">
+        {formatDate(new Date(), "iiii, do LLLL")}
+      </div>
+    </Card.Content>
+  </Card.Root>
+</div>
+
+<div class="grid gap-3 mb-3 md:mb-8 grid-cols-2">
+  {#if initialDataLoaded}
+    <Card.Root class="col-span-1">
+      <Card.Header class="pb-2">
+        <Card.Description>Total classes held</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <Card.Title class="text-3xl">
+          {formatNumber(reportMetadata.totalClasses || 0)}
+        </Card.Title>
+      </Card.Content>
+    </Card.Root>
+    <Card.Root class="col-span-1">
+      <Card.Header class="pb-2">
+        <Card.Description>Total class duration</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <Card.Title class="text-3xl">
+          {formatNumber(reportMetadata.totalClassesInHour || 0)}
+          {(reportMetadata.totalClassesInHour || 0) > 1 ? "Hours" : "Hour"}
+        </Card.Title>
+      </Card.Content>
+    </Card.Root>
+  {:else}
+    {#each { length: 2 } as _, index}
+      <Card.Root class="col-span-1">
+        <Card.Header class="pb-2">
+          <Card.Description>
+            {index == 0 ? "Total classes" : "Total duration"}
+          </Card.Description>
+        </Card.Header>
+        <Card.Content>
+          <Skeleton class="w-full h-8" />
+        </Card.Content>
+      </Card.Root>
+    {/each}
+  {/if}
+</div>
+
+<div class="flex items-center gap-1 justify-between mb-3">
+  <Button class="h-9 gap-1.5" on:click={onDownload}>
+    <Download class="h-3.5 w-3.5" />
+    <span class="sr-only sm:not-sr-only sm:whitespace-nowrap">
+      Download Report
+    </span>
+  </Button>
   <div>
     <SortByMenu {sortBy} {sortOptions} {onSortBy} />
     <FilterByMenu
       bind:filterByValue={filterBy}
-      filterByScheme={filterScheme}
-      description="Find attendances with these properties."
+      description="Find students with these properties."
       {onSearch}
       {onResetSearch}
     />
@@ -166,8 +260,8 @@
   <Card.Header class="px-7">
     <Card.Title>Student attendances</Card.Title>
     <Card.Description>
-      {attendanceRegisterAttendances.length}
-      {attendanceRegisterAttendances.length > 1 ? "students" : "student"} found
+      {reports.length}
+      {reports.length > 1 ? "students" : "student"} found
     </Card.Description>
   </Card.Header>
   <Card.Content>
@@ -181,52 +275,57 @@
           </Table.Head>
           <Table.Head class="min-w-36 max-w-36 truncate">Percentage</Table.Head>
           <Table.Head class="min-w-24 max-w-24 truncate">Decision</Table.Head>
-          {#each data.attendanceRegister.classAttendances as classAttendance, _ (classAttendance.id)}
-            <Table.Head class="min-w-48 text-center">
-              {formatDate(classAttendance.date, "do LLL, yyyy")}
-              <br />
-              {formatDate(classAttendance.startTime, "hh:mm aaa")} - {formatDate(
-                classAttendance.endTime,
-                "hh:mm aaa"
-              )}
-            </Table.Head>
-          {/each}
+          {#if initialDataLoaded}
+            {#each reportMetadata.classesDate || [] as classAttendance, _ (classAttendance.id)}
+              <Table.Head class="min-w-48 text-center">
+                {formatDate(classAttendance.date, "do LLL, yyyy")}
+                <br />
+                {formatDate(classAttendance.startTime, "hh:mm aaa")} - {formatDate(
+                  classAttendance.endTime,
+                  "hh:mm aaa"
+                )}
+              </Table.Head>
+            {/each}
+          {:else}
+            {#each { length: 4 } as _}
+              <Table.Head class="min-w-48">
+                <div class="flex w-full justify-center">
+                  <Skeleton class="h-4 w-16" />
+                </div>
+              </Table.Head>
+            {/each}
+          {/if}
           <Table.Head class="w-[25px]">
             <div class="w-4"></div>
           </Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body class={initialDataLoaded ? "visible" : "hidden"}>
-        {#each attendanceRegisterAttendances as attendanceRegisterAttendance, _ (attendanceRegisterAttendance.id)}
+        {#each reports as report, _ (report.id)}
           <Table.Row>
             <Table.Cell class="min-w-72 max-w-72 truncate">
-              {attendanceRegisterAttendance.name}
+              {report.name}
             </Table.Cell>
             <Table.Cell class="min-w-48 max-w-48 truncate">
-              {attendanceRegisterAttendance.regno}
+              {report.regno}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
-              {formatNumber(attendanceRegisterAttendance.classesAttended)} /
-              {formatNumber(attendanceRegisterAttendance.numberOfClassTaught)}
+              {report.classesAttended} / {report.numberOfClassTaught}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
-              {attendanceRegisterAttendance.classesAttendedPercentage.toFixed(
-                2
-              )}%
+              {report.classesAttendedPercentage.toFixed(2)}%
             </Table.Cell>
             <Table.Cell class="min-w-24 max-w-24 truncate capitalize">
-              {attendanceRegisterAttendance.decision.toLowerCase()}
+              {report.decision.toLowerCase()}
             </Table.Cell>
-            {#each data.attendanceRegister.classAttendances as classAttendance, _ (classAttendance.id)}
+            {#each reportMetadata.classesDate || [] as classAttendance, _ (classAttendance.id)}
               <Table.Cell class="min-w-48 text-center">
                 <Badge
-                  class="text-white {attendanceRegisterAttendance[
-                    classAttendance.id
-                  ] == 'PRESENT'
+                  class="text-white {report[classAttendance.id] == 1
                     ? 'bg-green-500 hover:bg-green-600'
                     : 'bg-red-500 hover:bg-red-600'}"
                 >
-                  {attendanceRegisterAttendance[classAttendance.id]}
+                  {report[classAttendance.id] ? "PRESENT" : "ABSENT"}
                 </Badge>
               </Table.Cell>
             {/each}
@@ -247,30 +346,12 @@
                   <DropdownMenu.Label>Actions</DropdownMenu.Label>
                   <DropdownMenu.Item
                     on:click={() =>
-                      attendanceRegisterAttendanceRecordDialog.show(
-                        "VIEW",
-                        attendanceRegisterAttendance
+                      courseReportDialog.show(
+                        report,
+                        reportMetadata.classesDate || []
                       )}
                   >
                     View
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    on:click={() =>
-                      attendanceRegisterAttendanceRecordDialog.show(
-                        "PRESENT",
-                        attendanceRegisterAttendance
-                      )}
-                  >
-                    Mark present
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    on:click={() =>
-                      attendanceRegisterAttendanceRecordDialog.show(
-                        "ABSENT",
-                        attendanceRegisterAttendance
-                      )}
-                  >
-                    Mark absent
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
@@ -285,7 +366,7 @@
               <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
               <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
               <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
-              {#each { length: data.attendanceRegister.classAttendances.length } as _}
+              {#each { length: (reportMetadata.classesDate || []).length } as _}
                 <Table.Cell class="w-48">
                   <div class="flex w-full justify-center">
                     <Skeleton class="h-4 w-16" />
@@ -309,8 +390,8 @@
             <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
             <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
             <Table.Cell><Skeleton class="h-4 w-full" /></Table.Cell>
-            {#each { length: data.attendanceRegister.classAttendances.length } as _}
-              <Table.Cell class="w-48">
+            {#each { length: 4 } as _}
+              <Table.Cell class="min-w-48">
                 <div class="flex w-full justify-center">
                   <Skeleton class="h-4 w-16" />
                 </div>
@@ -326,7 +407,7 @@
       </Table.Body>
     </Table.Root>
   </Card.Content>
-  {#if attendanceRegisterAttendances.length == 0 && initialDataLoaded && !requestOngoing}
+  {#if reports.length == 0 && initialDataLoaded && !requestOngoing}
     <div
       class="w-full px-7 py-6 pt-0 flex justify-center text-sm text-muted-foreground font-semibold italic"
     >
@@ -349,13 +430,5 @@
     </Button>
   </Card.Footer>
 </Card.Root>
-
 <SessionAlertDialog bind:this={sessionAlertDialog} />
-<AttendanceRegisterAttendanceRecordDialog
-  accessToken={data.session.accessToken}
-  attendanceRegisterId={data.attendanceRegister.id}
-  classAttendances={data.attendanceRegister.classAttendances}
-  on:sessionError={() => sessionAlertDialog.show()}
-  on:successful={async () => await initializeData()}
-  bind:this={attendanceRegisterAttendanceRecordDialog}
-/>
+<CourseReportDialog bind:this={courseReportDialog} />

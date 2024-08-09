@@ -50,6 +50,17 @@ export const getStudents: AuthenticatedServiceHandle<Partial<GetStudentsServiceB
     return responseBody
 }
 
+export const getStudentById: AuthenticatedServiceHandle<{ id: string }, StudentModel> = async ({ accessToken, id }) => {
+    let response = await fetch(new URL(`/admin/record/student/${id}`, BACKEND_BASE_URL), {
+        method: "GET",
+        headers: AuthenticatedHeadersInit(accessToken)
+    })
+
+    let responseBody = await response.json()
+
+    return responseBody
+}
+
 export const createStudent: AuthenticatedServiceHandle<StudentServiceBody, StudentModel> = async (data) => {
     let { accessToken, ...otherData } = data
 
