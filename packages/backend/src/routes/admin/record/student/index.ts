@@ -453,11 +453,12 @@ StudentRoute.delete("/", async (req, res) => {
 
     body.studentsId = body.studentsId || []
 
-    await prismaClient.student.deleteMany({
+    await prismaClient.user.deleteMany({
         where: {
             id: {
                 in: body.studentsId
-            }
+            },
+            type: $Enums.UserType.STUDENT
         }
     })
 
