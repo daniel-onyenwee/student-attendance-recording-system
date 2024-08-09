@@ -21,7 +21,7 @@
   import { onMount } from "svelte";
   import SortWorker from "@/web-workers/sort?worker";
   import { SortByMenu, FilterByMenu } from "@/components/menu";
-  import { sleep } from "@/utils";
+  import { formatNumber, sleep } from "@/utils";
   import { formatDate } from "date-fns";
   import numbro from "numbro";
 
@@ -208,12 +208,7 @@
       </Card.Header>
       <Card.Content>
         <Card.Title class="text-3xl">
-          {numbro(reportMetadata.totalClasses).format({
-            average: true,
-            output: "number",
-            mantissa: 2,
-            optionalMantissa: true,
-          })}
+          {formatNumber(reportMetadata.totalClasses || 0)}
         </Card.Title>
       </Card.Content>
     </Card.Root>
@@ -223,12 +218,7 @@
       </Card.Header>
       <Card.Content>
         <Card.Title class="text-3xl">
-          {numbro(reportMetadata.totalClassesInHour).format({
-            average: true,
-            output: "number",
-            mantissa: 2,
-            optionalMantissa: true,
-          })}
+          {formatNumber(reportMetadata.totalClassesInHour || 0)}
           {(reportMetadata.totalClassesInHour || 0) > 1 ? "Hours" : "Hour"}
         </Card.Title>
       </Card.Content>

@@ -24,7 +24,7 @@
   import { onMount } from "svelte";
   import SortWorker from "@/web-workers/sort?worker";
   import { SortByMenu, FilterByMenu } from "@/components/menu";
-  import { sleep } from "@/utils";
+  import { formatNumber, sleep } from "@/utils";
   import { formatDate } from "date-fns";
 
   export let data: PageData;
@@ -282,10 +282,11 @@
               </Badge>
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
-              {report.classesTaught} / {report.totalClasses}
+              {formatNumber(report.classesTaught)} /
+              {formatNumber(report.totalClasses)}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
-              {report.classesTaughtInHour}
+              {formatNumber(report.classesTaughtInHour)}
               {report.classesTaughtInHour > 1 ? "Hours" : "Hour"}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">

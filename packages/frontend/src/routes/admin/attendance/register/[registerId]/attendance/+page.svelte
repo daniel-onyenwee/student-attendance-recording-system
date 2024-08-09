@@ -14,7 +14,7 @@
   } from "@/service";
   import { formatDate } from "date-fns";
   import { onMount } from "svelte";
-  import { sleep } from "@/utils";
+  import { formatNumber, sleep } from "@/utils";
   import SortWorker from "@/web-workers/sort?worker";
   import {
     SessionAlertDialog,
@@ -147,7 +147,6 @@
     });
 
     await initializeData();
-    console.log(attendanceRegisterAttendances);
   });
 </script>
 
@@ -207,7 +206,8 @@
               {attendanceRegisterAttendance.regno}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
-              {attendanceRegisterAttendance.classesAttended} / {attendanceRegisterAttendance.numberOfClassTaught}
+              {formatNumber(attendanceRegisterAttendance.classesAttended)} /
+              {formatNumber(attendanceRegisterAttendance.numberOfClassTaught)}
             </Table.Cell>
             <Table.Cell class="min-w-36 max-w-36 truncate">
               {attendanceRegisterAttendance.classesAttendedPercentage.toFixed(
