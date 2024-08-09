@@ -202,7 +202,7 @@
   const sortOptions = [
     { name: "Course title", value: "courseTitle" },
     { name: "Course code", value: "courseCode" },
-    { name: "lecturer name", value: "lecturerName" },
+    { name: "Lecturer name", value: "lecturerName" },
     { name: "Date", value: "date" },
     { name: "Start time", value: "startTime" },
     { name: "End time", value: "endTime" },
