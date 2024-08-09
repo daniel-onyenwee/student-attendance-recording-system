@@ -68,10 +68,12 @@ const getBreadCrumbItems = (currentPage: string) => {
 
     let jointPaths = ""
 
+    let previousPath = ""
+
     for (const path of paths) {
         if (!path) continue
 
-        if (!validateUUID(path)) {
+        if (!validateUUID(path) && !/^(\d{4})\/(\d{4})$/.test(decodeURIComponent(path))) {
             jointPaths = `${jointPaths}/${path}`
         }
 
@@ -88,8 +90,10 @@ const getBreadCrumbItems = (currentPage: string) => {
         } else if (validateUUID(path)) {
             items.push({ href: jointPaths, label: path })
         } else {
-            items.push({ href: jointPaths, label: path })
+            items.push({ href: `${jointPaths}/${previousPath}/${path}`, label: decodeURIComponent(path) })
         }
+
+        previousPath = path
     }
 
     return items
