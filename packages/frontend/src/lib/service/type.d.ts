@@ -20,7 +20,7 @@ type ServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null 
     (data: ServiceBody) => Promise<ServiceData<ServiceReturnedData>>
 
 type AuthenticatedServiceHandle<ServiceBody, ServiceReturnedData> = ServiceBody extends null ?
-    ({ accessToken: string }) => Promise<ServiceData<ServiceReturnedData>> :
+    ({ accessToken }: { accessToken: string }) => Promise<ServiceData<ServiceReturnedData>> :
     (data: ServiceBody & { accessToken: string }) => Promise<ServiceData<ServiceReturnedData>>
 
 interface ServiceError {
