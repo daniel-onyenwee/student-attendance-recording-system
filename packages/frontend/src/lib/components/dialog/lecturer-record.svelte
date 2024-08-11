@@ -19,6 +19,7 @@
   import { Input } from "@/components/ui/input";
 
   export let accessToken: string;
+  export let userType: "ADMIN" | "LECTURER" = "ADMIN";
 
   function show(mode: "CREATE", data: undefined): void;
   function show(mode: "UPDATE" | "VIEW", data: LecturerModel): void;
@@ -36,16 +37,18 @@
 
     open = true;
 
-    getDepartments({ accessToken, count: "all" })
-      .then(({ data }) => {
-        departments = data || [];
-      })
-      .catch(() => {
-        departments = [];
-      })
-      .finally(() => {
-        departmentsLoaded = true;
-      });
+    if (mode != "VIEW") {
+      getDepartments({ accessToken, count: "all" })
+        .then(({ data }) => {
+          departments = data || [];
+        })
+        .catch(() => {
+          departments = [];
+        })
+        .finally(() => {
+          departmentsLoaded = true;
+        });
+    }
   }
 
   export function close() {
@@ -433,30 +436,32 @@
           </p>
         {/if}
       </div>
-      <div class="grid gap-2">
-        <Label for="password">Password</Label>
-        {#if dialogMode == "VIEW"}
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            id="password"
-          >
-            {lecturerData.password}
-          </span>
-        {:else}
-          <Input
-            placeholder="Lecturer password"
-            type="text"
-            id="password"
-            bind:value={lecturerData.password}
-          />
-          <p
-            class="text-sm font-medium text-red-500 {!errorMessage.password &&
-              'hidden'}"
-          >
-            {errorMessage.password}
-          </p>
-        {/if}
-      </div>
+      {#if userType == "ADMIN"}
+        <div class="grid gap-2">
+          <Label for="password">Password</Label>
+          {#if dialogMode == "VIEW"}
+            <span
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              id="password"
+            >
+              {lecturerData.password}
+            </span>
+          {:else}
+            <Input
+              placeholder="Lecturer password"
+              type="text"
+              id="password"
+              bind:value={lecturerData.password}
+            />
+            <p
+              class="text-sm font-medium text-red-500 {!errorMessage.password &&
+                'hidden'}"
+            >
+              {errorMessage.password}
+            </p>
+          {/if}
+        </div>
+      {/if}
       <Button
         type="submit"
         on:click={onCreateOrUpdate}

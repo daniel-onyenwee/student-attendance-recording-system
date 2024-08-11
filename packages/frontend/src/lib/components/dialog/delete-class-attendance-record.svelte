@@ -2,14 +2,19 @@
   import { mediaQuery } from "svelte-legos";
   import { LoaderCircle } from "lucide-svelte/icons";
   import { capitalizeText, removeUnderscore, showDialogToast } from "@/utils";
-  import { deleteClassAttendances, deleteClassAttendees } from "@/service";
+  import {
+    deleteClassAttendances,
+    deleteClassAttendees,
+    deleteLecturerClassAttendees,
+    deleteLecturerClassAttendance,
+  } from "@/service";
   import * as Dialog from "@/components/ui/dialog";
   import * as Drawer from "@/components/ui/drawer";
   import { Button } from "@/components/ui/button";
   import { createEventDispatcher } from "svelte";
 
   export let accessToken: string;
-
+  export let userType: "ADMIN" | "LECTURER" = "ADMIN";
   export let type: "CLASS_ATTENDANCE" | "CLASS_ATTENDEE";
 
   export function show(recordsId: string[] = [], classAttendanceId?: string) {
@@ -37,28 +42,41 @@
       let serviceRequest = null;
 
       if (type == "CLASS_ATTENDANCE") {
-        serviceRequest = await deleteClassAttendances({
-          accessToken: accessToken,
-          classAttendancesId: dataToDeleteId,
-        });
-      } else if (type == "CLASS_ATTENDEE") {
-        if (!_classAttendanceId) {
-          requestOngoing = false;
-          close();
-
-          showDialogToast(
-            "ERROR",
-            "Request failed",
-            "Class attendance not found"
-          );
-          return;
+        if (userType == "ADMIN") {
+          serviceRequest = await deleteClassAttendances({
+            accessToken: accessToken,
+            classAttendancesId: dataToDeleteId,
+          });
+        } else if (userType == "LECTURER") {
+          serviceRequest = await deleteLecturerClassAttendance({
+            accessToken: accessToken,
+          });
         }
+      } else if (type == "CLASS_ATTENDEE") {
+        if (userType == "ADMIN") {
+          if (!_classAttendanceId) {
+            requestOngoing = false;
+            close();
 
-        serviceRequest = await deleteClassAttendees({
-          accessToken: accessToken,
-          classAttendanceId: _classAttendanceId,
-          classAttendeesId: dataToDeleteId,
-        });
+            showDialogToast(
+              "ERROR",
+              "Request failed",
+              "Class attendance not found"
+            );
+            return;
+          }
+
+          serviceRequest = await deleteClassAttendees({
+            accessToken: accessToken,
+            classAttendanceId: _classAttendanceId,
+            classAttendeesId: dataToDeleteId,
+          });
+        } else if (userType == "LECTURER") {
+          serviceRequest = await deleteLecturerClassAttendees({
+            accessToken: accessToken,
+            classAttendeesId: dataToDeleteId,
+          });
+        }
       }
 
       if (!serviceRequest) {
