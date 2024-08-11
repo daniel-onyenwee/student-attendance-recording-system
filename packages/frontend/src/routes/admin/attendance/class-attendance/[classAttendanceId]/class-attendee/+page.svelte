@@ -213,7 +213,7 @@
     <FilterByMenu
       bind:filterByValue={filterBy}
       filterByScheme={filterScheme}
-      description="Find registers with these properties."
+      description="Find class attendees with these properties."
       {onSearch}
       {onResetSearch}
     />

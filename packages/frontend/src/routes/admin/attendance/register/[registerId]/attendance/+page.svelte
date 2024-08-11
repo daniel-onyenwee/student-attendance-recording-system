@@ -156,7 +156,7 @@
     <FilterByMenu
       bind:filterByValue={filterBy}
       filterByScheme={filterScheme}
-      description="Find attendances with these properties."
+      description="Find student attendances with these properties."
       {onSearch}
       {onResetSearch}
     />
