@@ -257,3 +257,4 @@
   on:successful={async () => await goto("/login")}
   bind:this={deleteAdminDialog}
 />
+<SessionAlertDialog bind:this={sessionAlertDialog} />
