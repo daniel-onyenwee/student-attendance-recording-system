@@ -37,6 +37,12 @@ ClassAttendanceRoute.get("/", async (req, res) => {
             startTime: true,
             createdAt: true,
             updatedAt: true,
+            classLocation: {
+                select: {
+                    classShape: true,
+                    classSize: true
+                }
+            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -65,7 +71,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true,
                         }
                     }
                 }
@@ -86,10 +93,11 @@ ClassAttendanceRoute.get("/", async (req, res) => {
         return
     }
 
-    let { attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
+    let { classLocation, attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
     let {
         surname,
         otherNames,
+        username
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -111,6 +119,7 @@ ClassAttendanceRoute.get("/", async (req, res) => {
             courseCode,
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
+            lecturerUsername: username,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
             department: departmentName,
             faculty: facultyName,
@@ -118,6 +127,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
             startTime,
             endTime,
             ...otherData,
+            classSize: classLocation ? classLocation.classSize : null,
+            classShape: classLocation ? classLocation.classShape : null,
         },
         error: null
     })
@@ -449,6 +460,12 @@ ClassAttendanceRoute.post("/", async (req, res) => {
             submittedAt: true,
             createdAt: true,
             updatedAt: true,
+            classLocation: {
+                select: {
+                    classShape: true,
+                    classSize: true
+                }
+            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -477,7 +494,8 @@ ClassAttendanceRoute.post("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -486,6 +504,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
     })
 
     let {
+        classLocation,
         attendanceRegister: {
             course,
             ...otherAttendanceRegisterData
@@ -499,6 +518,7 @@ ClassAttendanceRoute.post("/", async (req, res) => {
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -517,6 +537,9 @@ ClassAttendanceRoute.post("/", async (req, res) => {
         data: {
             courseTitle,
             courseCode,
+            lecturerUsername: username,
+            classSize: classLocation ? classLocation.classSize : null,
+            classShape: classLocation ? classLocation.classShape : null,
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
@@ -536,8 +559,8 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
 
     let lecturerId = req.app.get("user-id")
 
-    let body: ClassAttendanceRequestBody = req.body || {}
-    let updateData: Partial<ClassAttendanceRequestBody> = {}
+    let body: Omit<ClassAttendanceRequestBody, "longitude" | "latitude"> = req.body || {}
+    let updateData: Partial<Omit<ClassAttendanceRequestBody, "longitude" | "latitude">> = {}
 
     let classAttendancesCount = await prismaClient.classAttendance.findFirst({
         where: {
@@ -738,8 +761,7 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
             endTime: updateData.endTime,
             classLocation: {
                 update: {
-                    latitude: updateData.latitude,
-                    longitude: updateData.longitude,
+
                     classShape: updateData.classShape as $Enums.ClassShape,
                     classSize: updateData.classShape as $Enums.ClassSize
                 }
@@ -753,6 +775,12 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
             submittedAt: true,
             createdAt: true,
             updatedAt: true,
+            classLocation: {
+                select: {
+                    classShape: true,
+                    classSize: true
+                }
+            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -781,7 +809,8 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -790,6 +819,7 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
     })
 
     let {
+        classLocation,
         attendanceRegister: {
             course,
             ...otherAttendanceRegisterData
@@ -803,6 +833,7 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -822,6 +853,9 @@ ClassAttendanceRoute.patch("/", async (req, res) => {
         data: {
             courseTitle,
             courseCode,
+            lecturerUsername: username,
+            classSize: classLocation ? classLocation.classSize : null,
+            classShape: classLocation ? classLocation.classShape : null,
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
@@ -878,6 +912,12 @@ ClassAttendanceRoute.delete("/", async (req, res) => {
             createdAt: true,
             updatedAt: true,
             submittedAt: true,
+            classLocation: {
+                select: {
+                    classSize: true,
+                    classShape: true
+                }
+            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -906,7 +946,8 @@ ClassAttendanceRoute.delete("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -914,10 +955,11 @@ ClassAttendanceRoute.delete("/", async (req, res) => {
         }
     })
 
-    let { attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
+    let { classLocation, attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -939,6 +981,9 @@ ClassAttendanceRoute.delete("/", async (req, res) => {
             courseCode,
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
+            lecturerUsername: username,
+            classSize: classLocation ? classLocation.classSize : null,
+            classShape: classLocation ? classLocation.classShape : null,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
             department: departmentName,
             faculty: facultyName,

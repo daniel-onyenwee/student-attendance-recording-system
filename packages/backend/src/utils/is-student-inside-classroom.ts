@@ -20,7 +20,7 @@ const toRad = (x: number) => x * Math.PI / 180
 
 function classSizeInMetre(size: $Enums.ClassSize): number {
     if (size == $Enums.ClassSize.EXTRA_LARGE) {
-        return ExtraSmallClassSizeInMetre * 2
+        return ExtraSmallClassSizeInMetre * 5
     } else if (size == $Enums.ClassSize.LARGE) {
         return ExtraSmallClassSizeInMetre * 4
     } else if (size == $Enums.ClassSize.MEDIUM) {

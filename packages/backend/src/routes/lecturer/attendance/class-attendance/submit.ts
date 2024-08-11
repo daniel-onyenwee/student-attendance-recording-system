@@ -88,6 +88,12 @@ SubmitRoute.post("/", async (req, res) => {
             createdAt: true,
             updatedAt: true,
             submittedAt: true,
+            classLocation: {
+                select: {
+                    classShape: true,
+                    classSize: true
+                }
+            },
             attendanceRegister: {
                 select: {
                     session: true,
@@ -116,7 +122,8 @@ SubmitRoute.post("/", async (req, res) => {
                     lecturer: {
                         select: {
                             otherNames: true,
-                            surname: true
+                            surname: true,
+                            username: true
                         }
                     }
                 }
@@ -124,10 +131,11 @@ SubmitRoute.post("/", async (req, res) => {
         }
     })
 
-    let { attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
+    let { classLocation, attendanceRegister: { course, ...otherAttendanceRegisterData }, attendanceRegisterLecturer, date, startTime, endTime, ...otherData } = classAttendance
     let {
         surname,
         otherNames,
+        username,
     } = attendanceRegisterLecturer.lecturer
     let {
         code: courseCode,
@@ -150,6 +158,9 @@ SubmitRoute.post("/", async (req, res) => {
             ...otherCourseDate,
             ...otherAttendanceRegisterData,
             lecturerName: `${surname} ${otherNames}`.toUpperCase(),
+            lecturerUsername: username,
+            classSize: classLocation ? classLocation.classSize : null,
+            classShape: classLocation ? classLocation.classShape : null,
             department: departmentName,
             faculty: facultyName,
             date,

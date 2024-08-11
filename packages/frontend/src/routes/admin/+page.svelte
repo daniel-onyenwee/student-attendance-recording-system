@@ -134,9 +134,9 @@
 </script>
 
 <div
-  class="grid gap-3 mb-3 md:mb-8 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+  class="grid gap-3 mb-3 md:mb-8 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3"
 >
-  <Card.Root class="col-span-1 md:col-span-2 lg:col-span-1">
+  <Card.Root class="col-span-1 md:col-span-2 xl:col-span-1">
     <Card.Header class="pb-2">
       <Card.Title>Welcome Back</Card.Title>
       <Card.Description class="max-w-lg text-balance leading-relaxed">

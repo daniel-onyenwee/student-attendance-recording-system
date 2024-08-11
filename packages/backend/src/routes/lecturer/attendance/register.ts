@@ -2,19 +2,25 @@ import express from "express"
 import { getCurrentSession } from "../../../utils/index.js"
 import { $Enums, PrismaClient } from "@prisma/client"
 
-type ArrangeBy = "title" | "code" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
+type ArrangeBy = "courseTitle" | "courseCode" | "session" | "semester" | "updatedAt" | "createdAt" | "department" | "faculty" | "level"
 
 type ArrangeOrder = "asc" | "desc"
 
-type QueryOrderByObject = Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "department" | "faculty">> & {
-    department?: Partial<{
-        name: ArrangeOrder,
-        faculty: {
-            name: ArrangeOrder,
-        }
-    }>
+type QueryOrderByObject = {
+    createdAt?: ArrangeOrder
+    updatedAt?: ArrangeOrder
+    course: Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "updatedAt" | "createdAt" | "department" | "faculty" | "courseTitle" | "courseCode">> & {
+        title?: ArrangeOrder
+        code?: ArrangeOrder
+        department?: Partial<{
+            name: ArrangeOrder
+            faculty: {
+                name: ArrangeOrder
+            }
+        }>
+    }
+    session?: ArrangeOrder
 }
-
 const RegisterRoute = express.Router()
 
 RegisterRoute.get("/", async (req, res) => {
@@ -25,8 +31,8 @@ RegisterRoute.get("/", async (req, res) => {
     let url = new URL(req.url || String(), `http://${req.headers.host}`)
     let department = url.searchParams.get("department") || String()
     let faculty = url.searchParams.get("faculty") || String()
-    let code = url.searchParams.get("code") || String()
-    let title = url.searchParams.get("title") || String()
+    let courseCode = url.searchParams.get("courseCode") || String()
+    let courseTitle = url.searchParams.get("courseTitle") || String()
     let level = url.searchParams.get("level") || String()
     let semester = url.searchParams.get("semester") || String()
     let session = url.searchParams.get("session") || String()
@@ -56,7 +62,7 @@ RegisterRoute.get("/", async (req, res) => {
     let searchBy: ArrangeBy = "createdAt"
     if (url.searchParams.has("by")) {
         let searchParamValue = url.searchParams.get("by") || ""
-        searchBy = ["title", "code", "session", "semester", "updatedAt", "createdAt", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
+        searchBy = ["courseTitle", "courseCode", "session", "semester", "updatedAt", "createdAt", "department", "faculty", "level"].includes(searchParamValue) ? searchParamValue as ArrangeBy : "createdAt"
     }
 
     let searchOrder: ArrangeOrder = "asc"
@@ -65,23 +71,38 @@ RegisterRoute.get("/", async (req, res) => {
         searchOrder = ["asc", "desc"].includes(searchParamValue) ? searchParamValue as ArrangeOrder : "asc"
     }
 
-    let orderBy: QueryOrderByObject = {}
-    if (searchBy == "department") {
-        orderBy = {
+    let orderBy: QueryOrderByObject = {
+        course: {}
+    }
+    if (searchBy == "session" || searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).course
+        orderBy[searchBy] = searchOrder
+    } else if (searchBy == "department") {
+        orderBy.course = {
             department: {
                 name: searchOrder
             }
         }
     } else if (searchBy == "faculty") {
-        orderBy = {
+        orderBy.course = {
             department: {
                 faculty: {
                     name: searchOrder
                 }
             }
         }
+    } else if (searchBy == "courseCode") {
+        orderBy.course = {
+            code: searchOrder
+        }
+    } else if (searchBy == "courseTitle") {
+        orderBy.course = {
+            title: searchOrder
+        }
     } else {
-        orderBy[searchBy] = searchOrder
+        orderBy.course = {
+            [searchBy]: searchOrder
+        }
     }
 
     const attendanceRegistersQuery = await prismaClient.attendanceRegister.findMany({
@@ -93,11 +114,11 @@ RegisterRoute.get("/", async (req, res) => {
             },
             course: {
                 title: {
-                    contains: title,
+                    contains: courseTitle,
                     mode: "insensitive"
                 },
                 code: {
-                    contains: code,
+                    contains: courseCode,
                     mode: "insensitive"
                 },
                 semester: semester ? {

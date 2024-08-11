@@ -9,8 +9,12 @@
   </title>
 </svelte:head>
 
-<main class="h-screen w-screen flex justify-center flex-col items-center gap-4">
-  <p class="text-7xl">Oops!</p>
-  <p class="mt-2 text-lg">{$page.status} - {$page.error?.message}</p>
-  <Button variant="outline" href="/">GO TO HOMEPAGE</Button>
+<main
+  class="bg-muted/40 h-screen w-screen flex justify-center flex-col items-center gap-4"
+>
+  <p class="text-muted-foreground text-7xl">Oops!</p>
+  <p class="text-muted-foreground mt-2 text-lg">
+    {$page.status} - {$page.error?.message}
+  </p>
+  <Button href="/">GO TO HOMEPAGE</Button>
 </main>

@@ -8,6 +8,7 @@
     getStudents,
     getCourses,
     addClassAttendees,
+    addLecturerClassAttendees,
     type ClassAttendeeModel,
     type StudentModel,
     type CourseModel,
@@ -18,7 +19,8 @@
   import { Label } from "@/components/ui/label";
 
   export let accessToken: string;
-  export let classAttendanceId: string;
+  export let classAttendanceId: string | null = null;
+  export let userType: "ADMIN" | "LECTURER" = "ADMIN";
 
   function show(mode: "ADD", data: undefined): void;
   function show(mode: "VIEW", data: ClassAttendeeModel): void;
@@ -29,27 +31,29 @@
     }
     open = true;
 
-    getStudents({ accessToken, count: "all" })
-      .then(({ data }) => {
-        students = data || [];
-      })
-      .then((_) => {
-        return getCourses({
-          accessToken,
-          count: "all",
+    if (mode == "ADD") {
+      getStudents({ accessToken, count: "all" })
+        .then(({ data }) => {
+          students = data || [];
+        })
+        .then((_) => {
+          return getCourses({
+            accessToken,
+            count: "all",
+          });
+        })
+        .then(({ data }) => {
+          courses = data || [];
+        })
+        .catch(() => {
+          students = students || [];
+          courses = courses || [];
+        })
+        .finally(() => {
+          studentsLoaded = true;
+          coursesLoaded = true;
         });
-      })
-      .then(({ data }) => {
-        courses = data || [];
-      })
-      .catch(() => {
-        students = students || [];
-        courses = courses || [];
-      })
-      .finally(() => {
-        studentsLoaded = true;
-        coursesLoaded = true;
-      });
+    }
   }
 
   export function close() {
@@ -94,22 +98,43 @@
     }
 
     try {
+      let serviceRequest = null;
       let { studentId, crashCourseId } = classAttendeeData;
 
       if (!studentId) {
         throw new Error();
       }
 
-      let serviceRequest = await addClassAttendees({
-        accessToken: accessToken,
-        classAttendanceId: classAttendanceId,
-        classAttendees: [
-          {
-            studentId,
-            crashCourseId: crashCourseId,
-          },
-        ],
-      });
+      if (userType == "ADMIN") {
+        if (!classAttendanceId) {
+          throw new Error();
+        }
+
+        serviceRequest = await addClassAttendees({
+          accessToken: accessToken,
+          classAttendanceId: classAttendanceId,
+          classAttendees: [
+            {
+              studentId,
+              crashCourseId: crashCourseId,
+            },
+          ],
+        });
+      } else if (userType == "LECTURER") {
+        serviceRequest = await addLecturerClassAttendees({
+          accessToken: accessToken,
+          classAttendees: [
+            {
+              studentId,
+              crashCourseId: crashCourseId,
+            },
+          ],
+        });
+      }
+
+      if (!serviceRequest) {
+        throw new Error();
+      }
 
       if (serviceRequest.error) {
         requestOngoing = false;

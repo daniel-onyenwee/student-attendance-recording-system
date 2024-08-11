@@ -23,7 +23,6 @@
   import { SortByMenu, FilterByMenu } from "@/components/menu";
   import { formatNumber, sleep } from "@/utils";
   import { formatDate } from "date-fns";
-  import numbro from "numbro";
 
   export let data: PageData;
 
@@ -169,36 +168,19 @@
   </title>
 </svelte:head>
 
-<div
-  class="grid gap-3 mb-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
->
-  <Card.Root class="col-span-1 md:col-span-2">
-    <Card.Header class="pb-2">
-      <Card.Description>Course</Card.Description>
-      <Card.Title class="text-4xl">
-        {data.course.title}
-      </Card.Title>
-    </Card.Header>
-    <Card.Content>
-      <div class="text-muted-foreground">
-        {data.course.code}
-      </div>
-    </Card.Content>
-  </Card.Root>
-  <Card.Root class="col-span-1 md:col-span-2 lg:col-span-1">
-    <Card.Header class="pb-2">
-      <Card.Description>Session</Card.Description>
-      <Card.Title class="text-4xl">
-        {data.academicSession}
-      </Card.Title>
-    </Card.Header>
-    <Card.Content>
-      <div class="text-muted-foreground">
-        {formatDate(new Date(), "iiii, do LLLL")}
-      </div>
-    </Card.Content>
-  </Card.Root>
-</div>
+<Card.Root class="mb-3">
+  <Card.Header class="pb-2">
+    <Card.Description>Course</Card.Description>
+    <Card.Title class="text-4xl">
+      {data.course.title}
+    </Card.Title>
+  </Card.Header>
+  <Card.Content>
+    <div class="text-muted-foreground">
+      {data.course.code} &CenterDot; {data.academicSession}
+    </div>
+  </Card.Content>
+</Card.Root>
 
 <div class="grid gap-3 mb-3 md:mb-8 grid-cols-2">
   {#if initialDataLoaded}
@@ -207,7 +189,7 @@
         <Card.Description>Total classes held</Card.Description>
       </Card.Header>
       <Card.Content>
-        <Card.Title class="text-3xl">
+        <Card.Title class="text-2xl">
           {formatNumber(reportMetadata.totalClasses || 0)}
         </Card.Title>
       </Card.Content>
@@ -217,7 +199,7 @@
         <Card.Description>Total class duration</Card.Description>
       </Card.Header>
       <Card.Content>
-        <Card.Title class="text-3xl">
+        <Card.Title class="text-2xl">
           {formatNumber(reportMetadata.totalClassesInHour || 0)}
           {(reportMetadata.totalClassesInHour || 0) > 1 ? "Hours" : "Hour"}
         </Card.Title>
@@ -232,7 +214,7 @@
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          <Skeleton class="w-full h-8" />
+          <Skeleton class="w-full h-6" />
         </Card.Content>
       </Card.Root>
     {/each}

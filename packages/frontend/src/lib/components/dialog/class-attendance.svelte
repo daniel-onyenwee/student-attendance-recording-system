@@ -1,31 +1,62 @@
 <script lang="ts">
   import { LoaderCircle, ChevronsUpDown, Check } from "lucide-svelte/icons";
-  import { showDialogToast } from "@/utils";
+  import {
+    capitalizeText,
+    getCurrentLocation,
+    removeUnderscore,
+    showDialogToast,
+  } from "@/utils";
   import * as Sheet from "@/components/ui/sheet";
   import * as Command from "@/components/ui/command";
   import * as Popover from "@/components/ui/popover";
   import {
     createClassAttendance,
+    startLecturerClassAttendance,
     updateClassAttendance,
+    getLecturerAttendanceRegisters,
     getAttendanceRegisters,
     getAttendanceRegisterLecturers,
+    updateLecturerClassAttendance,
   } from "@/service";
   import type {
     ClassAttendanceModel,
     AttendanceRegisterLecturerModel,
     AttendanceRegisterModel,
+    LecturerClassAttendanceModel,
+    LecturerAttendanceRegisterModel,
+    ClassSize,
+    ClassShape,
   } from "@/service";
   import { cn } from "@/utils.js";
   import { Button } from "@/components/ui/button";
   import { createEventDispatcher, tick } from "svelte";
   import { Label } from "@/components/ui/label";
   import { Input } from "@/components/ui/input";
-  import { formatDate, toDate, isAfter } from "date-fns";
+  import { formatDate, toDate, isAfter, addHours } from "date-fns";
 
   export let accessToken: string;
+  export let userType: "ADMIN" | "LECTURER" = "ADMIN";
+
+  function classSizeInMetre(size: ClassSize): number {
+    const ExtraSmallClassSizeInMetre = 50;
+    if (size == "EXTRA_LARGE") {
+      return ExtraSmallClassSizeInMetre * 5;
+    } else if (size == "LARGE") {
+      return ExtraSmallClassSizeInMetre * 4;
+    } else if (size == "MEDIUM") {
+      return ExtraSmallClassSizeInMetre * 3;
+    } else if (size == "SMALL") {
+      return ExtraSmallClassSizeInMetre * 2;
+    } else {
+      return ExtraSmallClassSizeInMetre;
+    }
+  }
 
   function show(mode: "CREATE", data: undefined): void;
-  function show(mode: "UPDATE" | "VIEW", data: ClassAttendanceModel): void;
+  function show(
+    mode: "UPDATE" | "VIEW",
+    data: ClassAttendanceModel | LecturerClassAttendanceModel
+  ): void;
   export function show(mode: "CREATE" | "UPDATE" | "VIEW", data: any) {
     dialogMode = mode;
     if (mode == "UPDATE" || mode == "VIEW") {
@@ -33,20 +64,24 @@
     }
     open = true;
 
-    getAttendanceRegisters({ accessToken, count: "all" })
-      .then(({ data }) => {
-        attendanceRegisters = data || [];
-      })
-      .catch(() => {
-        attendanceRegisters = [];
-      })
-      .finally(() => {
-        attendanceRegistersLoaded = true;
-        attendanceRegisterLecturers = [];
-        attendanceRegisterLecturersLoaded = false;
-      });
+    if (mode != "VIEW") {
+      (userType == "ADMIN"
+        ? getAttendanceRegisters
+        : getLecturerAttendanceRegisters)({ accessToken, count: "all" })
+        .then(({ data }) => {
+          attendanceRegisters = data || [];
+        })
+        .catch(() => {
+          attendanceRegisters = [];
+        })
+        .finally(() => {
+          attendanceRegistersLoaded = true;
+          attendanceRegisterLecturers = [];
+          attendanceRegisterLecturersLoaded = false;
+        });
+    }
 
-    if (mode == "UPDATE") {
+    if (mode == "UPDATE" && userType == "ADMIN") {
       getAttendanceRegisters({
         accessToken,
         count: 1,
@@ -80,6 +115,14 @@
           attendanceRegisterLecturersLoaded = true;
         });
     }
+
+    if (mode != "VIEW" && userType == "LECTURER") {
+      classAttendanceData.date = new Date();
+      classAttendanceData.startTime = new Date();
+      classAttendanceData.endTime = addHours(classAttendanceData.startTime, 2);
+      Object(classAttendanceData).classSize = "SMALL";
+      Object(classAttendanceData).classShape = "SQUARE";
+    }
   }
 
   export function close() {
@@ -95,6 +138,20 @@
     attendanceRegistersLoaded = false;
     attendanceRegisterLecturersLoaded = false;
     classAttendanceData = {};
+  }
+
+  function onClassSizeSelected(currentValue: string) {
+    if ("classSize" in classAttendanceData) {
+      classAttendanceData.classSize = currentValue as any;
+      classSizePopoverOpen = false;
+    }
+  }
+
+  function onClassShapeSelected(currentValue: string) {
+    if ("classShape" in classAttendanceData) {
+      classAttendanceData.classShape = currentValue as any;
+      classShapePopoverOpen = false;
+    }
   }
 
   function onAttendanceRegisterLecturerSelected(
@@ -162,7 +219,8 @@
       !(
         classAttendanceData.courseCode == courseCode &&
         classAttendanceData.session == session
-      )
+      ) &&
+      userType == "ADMIN"
     ) {
       attendanceRegisterLecturersLoaded = false;
       attendanceRegisterLecturers = [];
@@ -197,13 +255,11 @@
 
     errorMessage = {};
 
-    let formInputs = [
-      "courseCode",
-      "lecturerUsername",
-      "date",
-      "startTime",
-      "endTime",
-    ];
+    let formInputs = ["courseCode", "date", "startTime", "endTime"];
+
+    userType == "ADMIN"
+      ? formInputs.push("lecturerUsername")
+      : formInputs.push("classSize", "classShape");
 
     for (const key of formInputs) {
       if (!Object(classAttendanceData)[key]) {
@@ -226,38 +282,77 @@
 
     try {
       let serviceRequest = null;
-      let {
-        attendanceRegisterId,
-        attendanceRegisterLecturerId,
-        startTime,
-        endTime,
-        date,
-      } = classAttendanceData as Required<
-        ClassAttendanceModel & {
-          attendanceRegisterId: string;
-          attendanceRegisterLecturerId: string;
-        }
-      >;
 
-      if (dialogMode == "CREATE") {
-        serviceRequest = await createClassAttendance({
-          accessToken: accessToken,
+      if (userType == "ADMIN") {
+        let {
           attendanceRegisterId,
           attendanceRegisterLecturerId,
           startTime,
           endTime,
           date,
-        });
-      } else {
-        serviceRequest = await updateClassAttendance({
-          id: classAttendanceData.id as string,
-          accessToken: accessToken,
+        } = classAttendanceData as Required<
+          ClassAttendanceModel & {
+            attendanceRegisterId: string;
+            attendanceRegisterLecturerId: string;
+          }
+        >;
+        if (dialogMode == "CREATE") {
+          serviceRequest = await createClassAttendance({
+            accessToken: accessToken,
+            attendanceRegisterId,
+            attendanceRegisterLecturerId,
+            startTime,
+            endTime,
+            date,
+          });
+        } else {
+          serviceRequest = await updateClassAttendance({
+            id: classAttendanceData.id as string,
+            accessToken: accessToken,
+            attendanceRegisterId,
+            attendanceRegisterLecturerId,
+            startTime,
+            endTime,
+            date,
+          });
+        }
+      } else if (userType == "LECTURER") {
+        let {
           attendanceRegisterId,
-          attendanceRegisterLecturerId,
           startTime,
           endTime,
           date,
-        });
+          classShape,
+          classSize,
+        } = classAttendanceData as Required<
+          LecturerClassAttendanceModel & {
+            attendanceRegisterId: string;
+          }
+        >;
+        if (dialogMode == "CREATE") {
+          let position = await getCurrentLocation();
+          serviceRequest = await startLecturerClassAttendance({
+            accessToken: accessToken,
+            attendanceRegisterId,
+            startTime,
+            endTime,
+            date,
+            classShape,
+            classSize,
+            longitude: position.coords.longitude,
+            latitude: position.coords.latitude,
+          });
+        } else {
+          serviceRequest = await updateLecturerClassAttendance({
+            accessToken: accessToken,
+            attendanceRegisterId,
+            classShape,
+            classSize,
+            startTime,
+            endTime,
+            date,
+          });
+        }
       }
 
       if (!serviceRequest) {
@@ -299,29 +394,65 @@
         classAttendanceId: serviceRequest.data?.id,
         mode: dialogMode,
       });
-    } catch {
-      showDialogToast("ERROR", "Request failed", "Unexpected error");
+    } catch (e) {
+      if (e instanceof GeolocationPositionError) {
+        showDialogToast(
+          "ERROR",
+          "Request failed",
+          e.PERMISSION_DENIED == GeolocationPositionError.PERMISSION_DENIED
+            ? "User denied geolocation access"
+            : e.POSITION_UNAVAILABLE ==
+                GeolocationPositionError.POSITION_UNAVAILABLE
+              ? "Location information unavailable"
+              : e.TIMEOUT == GeolocationPositionError.TIMEOUT
+                ? "Location request timed out"
+                : "Unexpected error"
+        );
+      } else {
+        showDialogToast("ERROR", "Request failed", "Unexpected error");
+      }
     }
 
     requestOngoing = false;
     close();
   }
 
+  const classSizeList: ClassSize[] = [
+    "EXTRA_SMALL",
+    "SMALL",
+    "MEDIUM",
+    "LARGE",
+    "EXTRA_LARGE",
+  ];
+  const classShapeList: ClassShape[] = ["CIRCLE", "SQUARE"];
+
   let requestOngoing: boolean = false;
-  let errorMessage: Partial<Record<keyof ClassAttendanceModel, string>> = {};
+  let errorMessage: Partial<
+    Record<
+      keyof ClassAttendanceModel | keyof LecturerClassAttendanceModel,
+      string
+    >
+  > = {};
   let classAttendanceData: Partial<
-    ClassAttendanceModel & {
-      attendanceRegisterId: string;
-      attendanceRegisterLecturerId: string;
-    }
+    | (ClassAttendanceModel & {
+        attendanceRegisterId: string;
+        attendanceRegisterLecturerId: string;
+      })
+    | (LecturerClassAttendanceModel & {
+        attendanceRegisterId: string;
+      })
   > = {};
   let open = false;
   let attendanceRegisterLecturerPopoverOpen = false;
   let attendanceRegisterPopoverOpen = false;
   let attendanceRegistersLoaded = false;
   let attendanceRegisterLecturersLoaded = false;
+  let classSizePopoverOpen = false;
+  let classShapePopoverOpen = false;
   let attendanceRegisterLecturers: AttendanceRegisterLecturerModel[] = [];
-  let attendanceRegisters: AttendanceRegisterModel[] = [];
+  let attendanceRegisters: Array<
+    AttendanceRegisterModel | LecturerAttendanceRegisterModel
+  > = [];
   let dialogMode: "CREATE" | "UPDATE" | "VIEW" = "CREATE";
   let dispatch = createEventDispatcher();
 
@@ -372,14 +503,16 @@
             {classAttendanceData.courseCode}
           </span>
         </div>
-        <div class="grid gap-2">
-          <Label>Lecturer name</Label>
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            {classAttendanceData.lecturerName}
-          </span>
-        </div>
+        {#if userType != "LECTURER"}
+          <div class="grid gap-2">
+            <Label>Lecturer name</Label>
+            <span
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {classAttendanceData.lecturerName}
+            </span>
+          </div>
+        {/if}
         <div class="grid gap-2">
           <Label>Date</Label>
           <span
@@ -407,26 +540,30 @@
             {formatDate(classAttendanceData.endTime || new Date(), "hh:mm aaa")}
           </span>
         </div>
-        <div class="grid gap-2">
-          <Label>Submitted at</Label>
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            {#if classAttendanceData.submittedAt}
-              {formatDate(classAttendanceData.submittedAt, "do LLL, yyyy")}
-            {:else}
-              -------------
-            {/if}
-          </span>
-        </div>
-        <div class="grid gap-2">
-          <Label>Status</Label>
-          <span
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            {classAttendanceData.status}
-          </span>
-        </div>
+        {#if userType == "ADMIN"}
+          <div class="grid gap-2">
+            <Label>Submitted at</Label>
+            <span
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {#if classAttendanceData.submittedAt}
+                {formatDate(classAttendanceData.submittedAt, "do LLL, yyyy")}
+              {:else}
+                -------------
+              {/if}
+            </span>
+          </div>
+        {/if}
+        {#if "status" in classAttendanceData}
+          <div class="grid gap-2">
+            <Label>Status</Label>
+            <span
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {classAttendanceData.status}
+            </span>
+          </div>
+        {/if}
         <div class="grid gap-2">
           <Label>Session</Label>
           <span
@@ -558,96 +695,105 @@
             {errorMessage.courseCode}
           </p>
         </div>
-        <div class="grid gap-2">
-          <Label>Lecturer</Label>
-          <Popover.Root
-            bind:open={attendanceRegisterLecturerPopoverOpen}
-            let:ids
-          >
-            <Popover.Trigger asChild let:builder>
-              <Button
-                builders={[builder]}
-                variant="outline"
-                role="combobox"
-                aria-expanded={attendanceRegisterLecturerPopoverOpen}
-                class="w-full h-fit justify-between font-normal {classAttendanceData.lecturerUsername ==
-                  undefined && 'text-muted-foreground'}"
-              >
-                {#if classAttendanceData.lecturerUsername}
-                  <div class="grid gap-1" style="width: calc(100% - 20px)">
-                    <p class="truncate text-left">
-                      {classAttendanceData.lecturerName}
-                    </p>
-                    <p class="text-sm text-muted-foreground truncate text-left">
-                      {classAttendanceData.lecturerUsername}
-                    </p>
-                  </div>
-                {:else}
-                  Select lecturer
-                {/if}
-                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
-              <Command.Root loop>
-                <Command.Input placeholder="Search lecturer..." />
-                <Command.List>
-                  {#if attendanceRegisterLecturersLoaded}
-                    <Command.Empty>No lecturer found.</Command.Empty>
-                    <Command.Group class="overflow-auto max-h-52">
-                      {#each attendanceRegisterLecturers as attendanceRegisterLecturer}
-                        <Command.Item
-                          onSelect={() => {
-                            classAttendanceData.attendanceRegisterLecturerId =
-                              attendanceRegisterLecturer.id;
-                            onAttendanceRegisterLecturerSelected(
-                              attendanceRegisterLecturer.username,
-                              attendanceRegisterLecturer.name
-                            );
-                            closeAndFocusTrigger(ids.trigger);
-                          }}
-                          value={`${attendanceRegisterLecturer.name} ${attendanceRegisterLecturer.username}`}
-                        >
-                          <Check
-                            class={cn(
-                              "mr-2 h-4 w-4",
-                              attendanceRegisterLecturer.username !==
-                                classAttendanceData.lecturerUsername &&
-                                "text-transparent"
-                            )}
-                          />
-                          <div
-                            style="width: calc(100% - 20px)"
-                            class="grid gap-1"
-                          >
-                            <span>{attendanceRegisterLecturer.name}</span>
-                            <span class="text-sm text-muted-foreground">
-                              {attendanceRegisterLecturer.username}
-                            </span>
-                          </div>
-                        </Command.Item>
-                      {/each}
-                    </Command.Group>
+        {#if userType == "ADMIN"}
+          <div class="grid gap-2">
+            <Label>Lecturer</Label>
+            <Popover.Root
+              bind:open={attendanceRegisterLecturerPopoverOpen}
+              let:ids
+            >
+              <Popover.Trigger asChild let:builder>
+                <Button
+                  builders={[builder]}
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={attendanceRegisterLecturerPopoverOpen}
+                  class="w-full h-fit justify-between font-normal {classAttendanceData.lecturerUsername ==
+                    undefined && 'text-muted-foreground'}"
+                >
+                  {#if classAttendanceData.lecturerUsername}
+                    <div class="grid gap-1" style="width: calc(100% - 20px)">
+                      <p class="truncate text-left">
+                        {classAttendanceData.lecturerName}
+                      </p>
+                      <p
+                        class="text-sm text-muted-foreground truncate text-left"
+                      >
+                        {classAttendanceData.lecturerUsername}
+                      </p>
+                    </div>
                   {:else}
-                    <Command.Loading class="py-6 text-center text-sm">
-                      {#if classAttendanceData.attendanceRegisterId}
-                        Loading lecturers...
-                      {:else}
-                        No register selected
-                      {/if}
-                    </Command.Loading>
+                    Select lecturer
                   {/if}
-                </Command.List>
-              </Command.Root>
-            </Popover.Content>
-          </Popover.Root>
-          <p
-            class="text-sm font-medium text-red-500 {!errorMessage.lecturerUsername &&
-              'hidden'}"
-          >
-            {errorMessage.lecturerUsername}
-          </p>
-        </div>
+                  <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+                <Command.Root loop>
+                  <Command.Input placeholder="Search lecturer..." />
+                  <Command.List>
+                    {#if attendanceRegisterLecturersLoaded}
+                      <Command.Empty>No lecturer found.</Command.Empty>
+                      <Command.Group class="overflow-auto max-h-52">
+                        {#each attendanceRegisterLecturers as attendanceRegisterLecturer}
+                          <Command.Item
+                            onSelect={() => {
+                              if (
+                                "attendanceRegisterLecturerId" in
+                                classAttendanceData
+                              ) {
+                                classAttendanceData.attendanceRegisterLecturerId =
+                                  attendanceRegisterLecturer.id;
+                                onAttendanceRegisterLecturerSelected(
+                                  attendanceRegisterLecturer.username,
+                                  attendanceRegisterLecturer.name
+                                );
+                                closeAndFocusTrigger(ids.trigger);
+                              }
+                            }}
+                            value={`${attendanceRegisterLecturer.name} ${attendanceRegisterLecturer.username}`}
+                          >
+                            <Check
+                              class={cn(
+                                "mr-2 h-4 w-4",
+                                attendanceRegisterLecturer.username !==
+                                  classAttendanceData.lecturerUsername &&
+                                  "text-transparent"
+                              )}
+                            />
+                            <div
+                              style="width: calc(100% - 20px)"
+                              class="grid gap-1"
+                            >
+                              <span>{attendanceRegisterLecturer.name}</span>
+                              <span class="text-sm text-muted-foreground">
+                                {attendanceRegisterLecturer.username}
+                              </span>
+                            </div>
+                          </Command.Item>
+                        {/each}
+                      </Command.Group>
+                    {:else}
+                      <Command.Loading class="py-6 text-center text-sm">
+                        {#if classAttendanceData.attendanceRegisterId}
+                          Loading lecturers...
+                        {:else}
+                          No register selected
+                        {/if}
+                      </Command.Loading>
+                    {/if}
+                  </Command.List>
+                </Command.Root>
+              </Popover.Content>
+            </Popover.Root>
+            <p
+              class="text-sm font-medium text-red-500 {!errorMessage.lecturerUsername &&
+                'hidden'}"
+            >
+              {errorMessage.lecturerUsername}
+            </p>
+          </div>
+        {/if}
         <div class="grid gap-2">
           <Label>Date</Label>
           <Input
@@ -703,6 +849,160 @@
             {errorMessage.endTime}
           </p>
         </div>
+        {#if "classSize" in classAttendanceData}
+          <div class="grid gap-2">
+            <Label>Class size</Label>
+            <Popover.Root bind:open={classSizePopoverOpen} let:ids>
+              <Popover.Trigger asChild let:builder>
+                <Button
+                  builders={[builder]}
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={classSizePopoverOpen}
+                  class="w-full h-fit justify-between font-normal {classAttendanceData.classSize ==
+                    undefined && 'text-muted-foreground'}"
+                >
+                  {#if classAttendanceData.classSize}
+                    <div class="grid gap-1" style="width: calc(100% - 20px)">
+                      <p class="truncate text-left">
+                        {capitalizeText(
+                          removeUnderscore(
+                            classAttendanceData.classSize.toLowerCase(),
+                            " "
+                          )
+                        )}
+                      </p>
+                      <p
+                        class="text-sm text-muted-foreground truncate text-left"
+                      >
+                        {classSizeInMetre(classAttendanceData.classSize)} metres
+                      </p>
+                    </div>
+                  {:else}
+                    Select class size
+                  {/if}
+                  <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+                <Command.Root loop>
+                  <Command.Input placeholder="Search class size..." />
+                  <Command.List>
+                    <Command.Empty>No class size found.</Command.Empty>
+                    <Command.Group class="overflow-auto max-h-52">
+                      {#each classSizeList as classSize, i}
+                        <Command.Item
+                          onSelect={(currentValue) => {
+                            onClassSizeSelected(currentValue);
+                            closeAndFocusTrigger(ids.trigger);
+                          }}
+                          value={classSize}
+                        >
+                          <Check
+                            class={cn(
+                              "mr-2 h-4 w-4",
+                              classAttendanceData.classSize !== classSize &&
+                                "text-transparent"
+                            )}
+                          />
+                          <div
+                            style="width: calc(100% - 20px)"
+                            class="grid gap-1"
+                          >
+                            <span>
+                              {capitalizeText(
+                                removeUnderscore(classSize.toLowerCase(), " "),
+                                true
+                              )}
+                            </span>
+                            <span class="text-sm text-muted-foreground">
+                              {classSizeInMetre(classSize)} metres
+                            </span>
+                          </div>
+                        </Command.Item>
+                      {/each}
+                    </Command.Group>
+                  </Command.List>
+                </Command.Root>
+              </Popover.Content>
+            </Popover.Root>
+            <p
+              class="text-sm font-medium text-red-500 {!errorMessage.classSize &&
+                'hidden'}"
+            >
+              {errorMessage.classSize}
+            </p>
+          </div>
+          <div class="grid gap-2">
+            <Label>Class shape</Label>
+            <Popover.Root bind:open={classShapePopoverOpen} let:ids>
+              <Popover.Trigger asChild let:builder>
+                <Button
+                  builders={[builder]}
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={classShapePopoverOpen}
+                  class="w-full justify-between font-normal {classAttendanceData.classShape ==
+                    undefined && 'text-muted-foreground'}"
+                >
+                  {#if classAttendanceData.classShape}
+                    <div class="grid gap-1" style="width: calc(100% - 20px)">
+                      <p class="truncate text-left">
+                        {capitalizeText(
+                          classAttendanceData.classShape.toLowerCase()
+                        )}
+                      </p>
+                    </div>
+                  {:else}
+                    Select class shape
+                  {/if}
+                  <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content class="p-0" style="width: calc(100% - 3rem)">
+                <Command.Root loop>
+                  <Command.Input placeholder="Search class shape..." />
+                  <Command.List>
+                    <Command.Empty>No class shape found.</Command.Empty>
+                    <Command.Group class="overflow-auto max-h-52">
+                      {#each classShapeList as classShape, _}
+                        <Command.Item
+                          onSelect={(currentValue) => {
+                            onClassShapeSelected(currentValue);
+                            closeAndFocusTrigger(ids.trigger);
+                          }}
+                          value={classShape}
+                        >
+                          <Check
+                            class={cn(
+                              "mr-2 h-4 w-4",
+                              classAttendanceData.classShape !== classShape &&
+                                "text-transparent"
+                            )}
+                          />
+                          <div
+                            style="width: calc(100% - 20px)"
+                            class="grid gap-1"
+                          >
+                            <span>
+                              {capitalizeText(classShape.toLowerCase())}
+                            </span>
+                          </div>
+                        </Command.Item>
+                      {/each}
+                    </Command.Group>
+                  </Command.List>
+                </Command.Root>
+              </Popover.Content>
+            </Popover.Root>
+            <p
+              class="text-sm font-medium text-red-500 {!errorMessage.classShape &&
+                'hidden'}"
+            >
+              {errorMessage.classShape}
+            </p>
+          </div>
+        {/if}
         <Button
           type="submit"
           on:click={onCreateOrUpdate}

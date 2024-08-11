@@ -1,18 +1,19 @@
 <script lang="ts">
+  import { formatDate } from "date-fns";
   import type { PageData } from "./$types";
   import {
     CirclePlus,
+    ChevronDownIcon,
     Ellipsis,
     LoaderCircle,
     Trash2,
   } from "lucide-svelte/icons";
   import { Button } from "@/components/ui/button";
-  import * as Card from "@/components/ui/card";
   import { Skeleton } from "@/components/ui/skeleton";
   import { Checkbox } from "@/components/ui/checkbox";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Table from "@/components/ui/table";
-  import { getClassAttendees } from "@/service";
+  import { getLecturerClassAttendees } from "@/service";
   import type {
     ClassAttendeeSortByOption,
     ClassAttendeeModel,
@@ -24,9 +25,13 @@
   import {
     SessionAlertDialog,
     ClassAttendeeDialog,
+    ClassAttendanceDialog,
     DeleteClassAttendanceRecordDialog,
+    SubmitClassAttendanceDialog,
   } from "@/components/dialog";
   import { SortByMenu, FilterByMenu } from "@/components/menu";
+  import * as Card from "@/components/ui/card";
+  import { goto } from "$app/navigation";
 
   export let data: PageData;
 
@@ -63,7 +68,7 @@
     }
 
     sortWorker.postMessage({
-      type: "CLASS_ATTENDEE",
+      type: "LECTURER_CLASS_ATTENDEE",
       mode: "REQUEST",
       payload: classAttendees,
       sortOptions: sortBy,
@@ -80,7 +85,7 @@
 
       if (sortWorker) {
         sortWorker.postMessage({
-          type: "CLASS_ATTENDEE",
+          type: "LECTURER_CLASS_ATTENDEE",
           mode: "REQUEST",
           payload: classAttendees,
           sortOptions: sortBy,
@@ -90,10 +95,8 @@
       sessionAlertDialog.show();
     }
   }
-
   async function loadData(page: number = 1) {
-    let serviceResponse = await getClassAttendees({
-      classAttendanceId: data.classAttendance.id,
+    let serviceResponse = await getLecturerClassAttendees({
       accessToken: data.session.accessToken,
       filter: filterBy,
       sort: sortBy,
@@ -168,14 +171,17 @@
   let classAttendeesSelected = new Set<string>();
   let sortWorker: Worker;
   let sessionAlertDialog: SessionAlertDialog;
+  let classAttendanceDialog: ClassAttendanceDialog;
   let deleteClassAttendeeRecordDialog: DeleteClassAttendanceRecordDialog;
+  let submitClassAttendanceDialog: SubmitClassAttendanceDialog;
+  let deleteClassAttendanceRecordDialog: DeleteClassAttendanceRecordDialog;
   let classAttendeeDialog: ClassAttendeeDialog;
 
   onMount(async () => {
     sortWorker = new SortWorker();
     sortWorker.addEventListener("message", (e) => {
       const { type, payload, mode } = e.data;
-      if (type == "CLASS_ATTENDEE" && mode == "RESPONSE") {
+      if (type == "LECTURER_CLASS_ATTENDEE" && mode == "RESPONSE") {
         classAttendees = payload;
       }
     });
@@ -184,16 +190,99 @@
   });
 </script>
 
+<svelte:head>
+  <title>Class attendance | Lecturer</title>
+</svelte:head>
+
+<Card.Root class="mb-3">
+  <Card.Header class="pb-2">
+    <Card.Description>Course</Card.Description>
+    <Card.Title class="text-4xl">
+      {data.classAttendance.courseTitle}
+    </Card.Title>
+  </Card.Header>
+  <Card.Content>
+    <div class="text-muted-foreground">
+      {data.classAttendance.courseCode} &CenterDot; {data.classAttendance
+        .session}
+    </div>
+  </Card.Content>
+</Card.Root>
+<div class="grid gap-3 mb-3 md:mb-8 grid-cols-3">
+  <Card.Root class="col-span-1">
+    <Card.Header class="pb-2">
+      <Card.Description>Date</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <Card.Title class="text-2xl">
+        {formatDate(data.classAttendance.date, "do LLL, yyyy")}
+      </Card.Title>
+    </Card.Content>
+  </Card.Root>
+  <Card.Root class="col-span-1">
+    <Card.Header class="pb-2">
+      <Card.Description>Start time</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <Card.Title class="text-2xl">
+        {formatDate(data.classAttendance.startTime, "hh:mm aaa")}
+      </Card.Title>
+    </Card.Content>
+  </Card.Root>
+  <Card.Root class="col-span-1">
+    <Card.Header class="pb-2">
+      <Card.Description>End time</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <Card.Title class="text-2xl">
+        {formatDate(data.classAttendance.endTime, "hh:mm aaa")}
+      </Card.Title>
+    </Card.Content>
+  </Card.Root>
+</div>
+
 <div class="flex items-center gap-1 justify-between mb-3">
-  <Button
-    on:click={() => classAttendeeDialog.show("ADD", undefined)}
-    class="h-9 gap-1.5  {classAttendeesSelected.size > 0 && 'hidden'}"
-  >
-    <CirclePlus class="h-3.5 w-3.5" />
-    <span class="sr-only sm:not-sr-only sm:whitespace-nowrap">
-      Add Class attendee
-    </span>
-  </Button>
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger
+      asChild
+      let:builder
+      class={classAttendeesSelected.size > 0 ? "hidden" : "visible"}
+    >
+      <Button builders={[builder]} class="h-9 gap-1.5">
+        Actions
+        <ChevronDownIcon class="h-3.5 w-3.5" />
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.Item
+        on:click={() => classAttendeeDialog.show("ADD", undefined)}
+      >
+        Add
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        on:click={() =>
+          classAttendanceDialog.show("VIEW", data.classAttendance)}
+      >
+        View
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        on:click={() =>
+          classAttendanceDialog.show("UPDATE", data.classAttendance)}
+      >
+        Edit
+      </DropdownMenu.Item>
+      <DropdownMenu.Item on:click={() => submitClassAttendanceDialog.show()}>
+        Submit
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        on:click={() => deleteClassAttendanceRecordDialog.show()}
+        class="text-red-500 data-[highlighted]:bg-red-400 dark:data-[highlighted]:bg-destructive data-[highlighted]:text-white"
+      >
+        Delete
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+
   <Button
     variant="destructive"
     on:click={() =>
@@ -213,12 +302,13 @@
     <FilterByMenu
       bind:filterByValue={filterBy}
       filterByScheme={filterScheme}
-      description="Find class attendees with these properties."
+      description="Find class class attendees with these properties."
       {onSearch}
       {onResetSearch}
     />
   </div>
 </div>
+
 <Card.Root>
   <Card.Header class="px-7">
     <Card.Title>Class attendees</Card.Title>
@@ -370,7 +460,18 @@
 </Card.Root>
 
 <SessionAlertDialog bind:this={sessionAlertDialog} />
+<ClassAttendanceDialog
+  userType="LECTURER"
+  accessToken={data.session.accessToken}
+  bind:this={classAttendanceDialog}
+/>
+<SubmitClassAttendanceDialog
+  accessToken={data.session.accessToken}
+  bind:this={submitClassAttendanceDialog}
+  on:successful={async () => goto("/lecturer")}
+/>
 <ClassAttendeeDialog
+  userType="LECTURER"
   accessToken={data.session.accessToken}
   classAttendanceId={data.classAttendance.id}
   on:sessionError={() => sessionAlertDialog.show()}
@@ -378,7 +479,16 @@
   bind:this={classAttendeeDialog}
 />
 <DeleteClassAttendanceRecordDialog
+  type="CLASS_ATTENDANCE"
+  userType="LECTURER"
+  accessToken={data.session.accessToken}
+  on:sessionError={() => sessionAlertDialog.show()}
+  on:successful={async () => goto("/lecturer")}
+  bind:this={deleteClassAttendanceRecordDialog}
+/>
+<DeleteClassAttendanceRecordDialog
   type="CLASS_ATTENDEE"
+  userType="LECTURER"
   accessToken={data.session.accessToken}
   on:sessionError={() => sessionAlertDialog.show()}
   on:successful={onDeleteSuccessful}
