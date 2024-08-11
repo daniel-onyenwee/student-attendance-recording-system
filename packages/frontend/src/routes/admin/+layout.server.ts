@@ -101,7 +101,7 @@ const getBreadCrumbItems = (currentPage: string) => {
 
 const getPageTitle = (currentPage: string) => {
     if (currentPage == "/admin") {
-        return "Dashboard"
+        return "Dashboard | Admin"
     }
 
     let [thirdLastItem, secondLastItem, lastItem] = currentPage.split("/").slice(-3)
