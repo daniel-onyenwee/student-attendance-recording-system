@@ -63,7 +63,7 @@
         serviceRequest = await updateAdminUser({
           accessToken: accessToken,
           username: clonedUser.username,
-          password: clonedUser.username,
+          password: clonedUser.password,
         });
       }
 

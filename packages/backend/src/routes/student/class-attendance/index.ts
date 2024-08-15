@@ -27,7 +27,9 @@ interface LecturerOtherNamesQueryOrderByObject {
     }
 }
 
-type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lecturerName" | CourseArrangeBy>> & {
+type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lecturerName" | "createdAt" | "updatedAt" | CourseArrangeBy>> & {
+    createdAt?: ArrangeOrder
+    updatedAt?: ArrangeOrder
     attendanceRegister?: {
         session?: ArrangeOrder
         course?: {
@@ -44,6 +46,7 @@ type QueryOrderByObject = (Partial<Omit<Record<ArrangeBy, ArrangeOrder>, "lectur
         }
     }
 }) | (LecturerSurnameQueryOrderByObject | LecturerOtherNamesQueryOrderByObject)[]
+
 
 const ClassAttendanceRoute = express.Router()
 
@@ -252,7 +255,8 @@ ClassAttendanceRoute.get("/", async (req, res) => {
                 }
             }
         }
-    } else {
+    } else if (searchBy == "createdAt" || searchBy == "updatedAt") {
+        delete Object(orderBy).attendanceRegister
         orderBy[searchBy] = searchOrder
     }
 

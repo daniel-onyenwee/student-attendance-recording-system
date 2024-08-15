@@ -463,6 +463,7 @@
 <ClassAttendanceDialog
   userType="LECTURER"
   accessToken={data.session.accessToken}
+  on:successful={async (e) => (data.classAttendance = e.detail.classAttendance)}
   bind:this={classAttendanceDialog}
 />
 <SubmitClassAttendanceDialog

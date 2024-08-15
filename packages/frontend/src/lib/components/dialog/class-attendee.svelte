@@ -190,7 +190,7 @@
   $: dialogDescription =
     dialogMode == "VIEW"
       ? "Complete information about the class attendee."
-      : "Add a class attendee to the register here. Click add when you're done.";
+      : "Add a class attendee to the class attendance here. Click add when you're done.";
 </script>
 
 <Sheet.Root
@@ -401,7 +401,7 @@
             class="text-sm font-medium text-red-500 {!errorMessage.crashCourseCode &&
               'hidden'}"
           >
-            {errorMessage.regno}
+            {errorMessage.crashCourseCode}
           </p>
         </div>
         <Button type="submit" on:click={onAdd} disabled={requestOngoing}>

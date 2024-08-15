@@ -26,6 +26,11 @@ StudentRoute.get("/", async (req, res) => {
             surname: true,
             gender: true,
             otherNames: true,
+            user: {
+                select: {
+                    refreshToken: true
+                }
+            },
             regno: true,
             level: true,
             password: true,
@@ -65,6 +70,9 @@ StudentRoute.get("/", async (req, res) => {
         regno,
         level,
         gender,
+        user: {
+            refreshToken
+        },
         createdAt,
         updatedAt,
         department: {
@@ -83,6 +91,9 @@ StudentRoute.get("/", async (req, res) => {
         data: {
             id,
             name: `${surname} ${otherNames}`.toUpperCase(),
+            refreshToken,
+            surname,
+            otherNames,
             regno,
             password,
             faceImage,
@@ -141,6 +152,11 @@ StudentRoute.patch("/", async (req, res) => {
             regno: true,
             level: true,
             password: true,
+            user: {
+                select: {
+                    refreshToken: true
+                }
+            },
             department: {
                 select: {
                     name: true,
@@ -164,6 +180,9 @@ StudentRoute.patch("/", async (req, res) => {
         regno,
         level,
         gender,
+        user: {
+            refreshToken
+        },
         createdAt,
         updatedAt,
         department: {
@@ -182,6 +201,9 @@ StudentRoute.patch("/", async (req, res) => {
         data: {
             id,
             name: `${surname} ${otherNames}`.toUpperCase(),
+            surname,
+            otherNames,
+            refreshToken,
             regno,
             password,
             faceImage,
