@@ -2,7 +2,7 @@ import express from "express"
 import { isStudentInsideClassroom } from "../../../utils/index.js"
 import { $Enums, PrismaClient } from "@prisma/client"
 
-interface StudentRequestBody {
+interface SigninRequestBody {
     classAttendanceId: string
     currentTimestamp: string
     latitude: number
@@ -16,7 +16,7 @@ SignInRoute.post("/", async (req, res) => {
     const prismaClient: PrismaClient = req.app.get("prisma-client")
 
     let userId = req.app.get("user-id")
-    let body: StudentRequestBody | null = req.body
+    let body: SigninRequestBody | null = req.body
 
     if (!body || Object.keys(body || {}).length == 0) {
         res.status(400)
@@ -160,7 +160,7 @@ SignInRoute.post("/", async (req, res) => {
             },
             endTime: {
                 gte: body.currentTimestamp
-            }
+            },
         },
         select: {
             id: true,
@@ -232,7 +232,7 @@ SignInRoute.post("/", async (req, res) => {
         res.json({
             ok: false,
             error: {
-                message: "Present outside the class",
+                message: "Location out of class range",
                 code: 6008
             },
             data: null
@@ -245,7 +245,7 @@ SignInRoute.post("/", async (req, res) => {
         res.json({
             ok: false,
             error: {
-                message: "Present outside the class",
+                message: "Location out of class range",
                 code: 6008
             },
             data: null
