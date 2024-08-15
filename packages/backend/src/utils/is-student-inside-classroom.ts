@@ -14,7 +14,7 @@ interface BoxBoundary {
     west: number
 }
 
-const ExtraSmallClassSizeInMetre = 50
+const ExtraSmallClassSizeInMetre = 5000
 
 const toRad = (x: number) => x * Math.PI / 180
 
