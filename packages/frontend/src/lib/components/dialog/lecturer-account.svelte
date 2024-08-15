@@ -47,7 +47,7 @@
       let serviceRequest = await updateLecturerUser({
         accessToken: accessToken,
         username: clonedUser.username,
-        password: clonedUser.username,
+        password: clonedUser.password,
       });
 
       if (!serviceRequest) {
