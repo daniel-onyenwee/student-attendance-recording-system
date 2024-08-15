@@ -2,7 +2,7 @@
   import { LoaderCircle, ChevronsUpDown, Check } from "lucide-svelte/icons";
   import {
     capitalizeText,
-    getCurrentLocation,
+    getCurrentPosition,
     removeUnderscore,
     showDialogToast,
   } from "@/utils";
@@ -26,6 +26,7 @@
     LecturerAttendanceRegisterModel,
     ClassSize,
     ClassShape,
+    StudentClassAttendanceModel,
   } from "@/service";
   import { cn } from "@/utils.js";
   import { Button } from "@/components/ui/button";
@@ -35,10 +36,10 @@
   import { formatDate, toDate, isAfter, addHours } from "date-fns";
 
   export let accessToken: string;
-  export let userType: "ADMIN" | "LECTURER" = "ADMIN";
+  export let userType: "ADMIN" | "LECTURER" | "STUDENT" = "ADMIN";
 
   function classSizeInMetre(size: ClassSize): number {
-    const ExtraSmallClassSizeInMetre = 50;
+    const ExtraSmallClassSizeInMetre = 5000;
     if (size == "EXTRA_LARGE") {
       return ExtraSmallClassSizeInMetre * 5;
     } else if (size == "LARGE") {
@@ -55,7 +56,10 @@
   function show(mode: "CREATE", data: undefined): void;
   function show(
     mode: "UPDATE" | "VIEW",
-    data: ClassAttendanceModel | LecturerClassAttendanceModel
+    data:
+      | ClassAttendanceModel
+      | LecturerClassAttendanceModel
+      | StudentClassAttendanceModel
   ): void;
   export function show(mode: "CREATE" | "UPDATE" | "VIEW", data: any) {
     dialogMode = mode;
@@ -116,7 +120,7 @@
         });
     }
 
-    if (mode != "VIEW" && userType == "LECTURER") {
+    if (mode == "CREATE" && userType == "LECTURER") {
       classAttendanceData.date = new Date();
       classAttendanceData.startTime = new Date();
       classAttendanceData.endTime = addHours(classAttendanceData.startTime, 2);
@@ -330,7 +334,7 @@
           }
         >;
         if (dialogMode == "CREATE") {
-          let position = await getCurrentLocation();
+          let position = await getCurrentPosition();
           serviceRequest = await startLecturerClassAttendance({
             accessToken: accessToken,
             attendanceRegisterId,
@@ -392,6 +396,7 @@
       );
       dispatch("successful", {
         classAttendanceId: serviceRequest.data?.id,
+        classAttendance: serviceRequest.data,
         mode: dialogMode,
       });
     } catch (e) {
@@ -875,7 +880,8 @@
                       <p
                         class="text-sm text-muted-foreground truncate text-left"
                       >
-                        {classSizeInMetre(classAttendanceData.classSize)} metres
+                        {classSizeInMetre(classAttendanceData.classSize) /
+                          1000}km
                       </p>
                     </div>
                   {:else}
@@ -916,7 +922,7 @@
                               )}
                             </span>
                             <span class="text-sm text-muted-foreground">
-                              {classSizeInMetre(classSize)} metres
+                              {classSizeInMetre(classSize) / 1000}km
                             </span>
                           </div>
                         </Command.Item>
