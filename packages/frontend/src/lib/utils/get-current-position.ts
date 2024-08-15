@@ -1,4 +1,4 @@
-export default async function getCurrentLocation(): Promise<GeolocationPosition> {
+export default async function getCurrentPosition(): Promise<GeolocationPosition> {
     return new Promise((resolve, reject) => {
         window.navigator.geolocation.getCurrentPosition(
             (data) => resolve(data),
