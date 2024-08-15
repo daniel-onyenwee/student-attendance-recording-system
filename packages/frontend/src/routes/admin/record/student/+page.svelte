@@ -59,11 +59,11 @@
         );
         return;
       }
-      if (file.size / 1024 > 100) {
+      if (file.size / 1024 > 1500) {
         showDialogToast(
           "ERROR",
           "Passport Upload failed",
-          "Image exceeds 100 KB limit"
+          "Image exceeds 1.5 MB limit"
         );
         return;
       }
