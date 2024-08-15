@@ -78,7 +78,10 @@ SubmitRoute.post("/", async (req, res) => {
         data: {
             status: $Enums.ClassAttendanceStatus.REVIEWING,
             endTime: body.endTime ? body.endTime : undefined,
-            submittedAt: body.submittedAt
+            submittedAt: body.submittedAt,
+            classLocation: {
+                delete: true
+            }
         },
         select: {
             id: true,
