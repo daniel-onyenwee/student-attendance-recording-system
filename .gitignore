@@ -1,5 +1,6 @@
 # build output
 packages/backend/lib/
+packages/fullstack/lib/
 build/
 
 # svelte
