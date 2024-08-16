@@ -12,7 +12,7 @@ import fileUpload from "express-fileupload"
 import { auth, logger, notFound } from "./middleware/index.js"
 import cors from "cors"
 
-const AppRoute = express()
+const AppRoute = express.Router()
 
 AppRoute.use(bodyParser.json())
 
@@ -44,8 +44,8 @@ AppRoute.use("/image", ImageRoute)
 
 AppRoute.use("/user", UserRoute)
 
-AppRoute.get("/", (_, res) => {
-    res.redirect("/process")
+AppRoute.get("/", (req, res) => {
+    res.redirect(req.baseUrl ? `${req.baseUrl}/process` : "/process")
 })
 
 AppRoute.use(notFound())
