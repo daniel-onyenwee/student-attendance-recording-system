@@ -1,0 +1,49 @@
+{
+  "name": "fullstack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The student attendance recording system fullstack application",
+  "keywords": [
+    "fullstack",
+    "sveltekit",
+    "express"
+  ],
+  "author": "daniel-onyenwee <danielonyenwee@gmail.com>",
+  "homepage": "https://github.com/daniel-onyenwee/student-attendance-recording-system#readme",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daniel-onyenwee/student-attendance-recording-system.git"
+  },
+  "scripts": {
+    "ts:build": "tsc --build",
+    "ts:watch": "tsc --watch",
+    "start": "npm run ts:build && node ./lib/index.js",
+    "dev": "concurrently -k \"npm run ts:watch\" \"nodemon ./lib/index.js\""
+  },
+  "bugs": {
+    "url": "https://github.com/daniel-onyenwee/student-attendance-recording-system/issues"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.9",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.0"
+  },
+  "dependencies": {
+    "@student-attendance-recording-system/backend": "0.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "open": "^10.1.0",
+    "portfinder": "^1.0.32"
+  }
+}
